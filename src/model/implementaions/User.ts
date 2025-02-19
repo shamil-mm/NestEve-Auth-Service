@@ -6,6 +6,7 @@ const UserSchema: Schema<IUser> = new Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     avatarUrl: {type:String,default:""},
+    is_verified:{type:Boolean,default:false},
     role:{type:String,enum:["user","admin","organizer"], default:"user"},
     status:{type:String,enum:["active","suspended","deleted"], default:"active"}
 },{timestamps:true});

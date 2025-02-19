@@ -17,10 +17,6 @@ app.use(urlencoded({extended:true}))
 
 const authRoutes=container.resolve(AuthRoutes)
 
-app.use((req,res,next)=>{
-    console.log(req.path)
-    next()
-})
 app.use("/",authRoutes.router)
 
 connetDB()

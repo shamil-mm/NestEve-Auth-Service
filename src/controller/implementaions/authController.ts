@@ -14,8 +14,8 @@ class AuthController implements IAuthController {
         console.log("register is working")
         try {
             const { name,email,password } = req.body
-            const user = await this.authService.registerUser(name,email,password);
-            res.status(201).json({message:"success"})
+             await this.authService.registerUser(name,email,password);
+            res.status(201).json({message:"verify your email to complete the user creation"})
 
         } catch (error) {
            const err= error as Error 
@@ -34,6 +34,19 @@ class AuthController implements IAuthController {
             const err=error as Error
             res.status(401).json({ error: err.message })
         }
+    }
+    async adminLogin(req:Request,res:Response):Promise<void>{
+        try {
+            console.log('admin controller is working')
+            
+            const{email,password}=req.body;
+            const result=await this.authService.loginAdmin(email,password,res)
+            res.status(201).json(result)
+        } catch (error) {
+            const err = error as Error;
+            res.status(401).json({ error: err.message });
+        }
+
     }
     async logout(req:Request,res:Response):Promise<void>{
         try {

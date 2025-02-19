@@ -6,6 +6,7 @@ export interface IUser extends Document{
     email: string;
     password: string;
     avatarUrl ?: string;
+    is_verified?:boolean;
     role ?:'user' | 'admin' |'organizer';
     status?:'active' | 'suspended' | 'deleted';
 }

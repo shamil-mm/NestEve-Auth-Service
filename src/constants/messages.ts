@@ -3,5 +3,7 @@ export const Messages = {
     LOGIN_SUCCESS: 'Login successful',
     INVALID_CREDENTIALS: 'Invalid email or password',
     USER_NOT_FOUND: 'User not found',
+    EMAIL_VERIFICATION_SUBJECT:'email verification otp',
+    RESET_PASSWORD_SUBJECT:'reset password otp'
   };
   
