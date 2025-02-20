@@ -11,10 +11,10 @@ export const signToken = (user:any)=>{
   }
 }
 
-export const verifyToken = (token:string)=>{
+export const verifyToken = (token:string,secret:string)=>{
   try {
     
-    return jwt.verify(token,config.jwtSecret)
+    return jwt.verify(token,secret)
   } catch (error) {
     return null
   }

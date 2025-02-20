@@ -16,6 +16,7 @@ import { Messages } from "../../constants/messages";
 import RedisService from "./RedisService";
 
 
+
 @injectable()
 class AuthService implements IAuthService {
   private redisClient: RedisClient;
@@ -47,11 +48,14 @@ class AuthService implements IAuthService {
       try {
         
         await EmailService.sentEmail(email,Messages.EMAIL_VERIFICATION_SUBJECT)
+        
       } catch (error) {
-        console.log("email sending error",error)
+      console.log("email sending error", error);
+      throw new Error("Failed to send verification email");
       }
     } catch (error: any) {
       console.log(error.message);
+      throw new Error(error.message);
     }
   }
 
@@ -124,7 +128,7 @@ class AuthService implements IAuthService {
 
   async refreshAccessToken(refreshToken: string): Promise<string | null> {
     try {
-      const data = verifyToken(refreshToken) as Decoded;
+      const data = verifyToken(refreshToken,config.jwtSecret) as Decoded;
      console.log(data)
       if (!data) {
         throw new Error("refresh token is not in redis data");
@@ -137,6 +141,31 @@ class AuthService implements IAuthService {
       console.error("Refresh token error:", error);
       return null;
     }
+  }
+  
+
+  async verifyAccount(token: string): Promise<{ message: string; }> {
+    try {
+      
+      const decoded=verifyToken(token,config.EMAIL_SECRET as string) as {to:string}
+      
+      if(!decoded){
+        throw new Error("Invalid or expired token") 
+      }
+      const email=decoded.to
+      
+      const userData=await RedisService.getData(`User:${email}`) as{email:string,name:string,hashedPassword:string}
+      
+      if (!userData) throw new Error("Invalid or expired token");
+      console.log(userData)
+      await this.authRepository.create({name:userData.name,email:userData.email,password:userData.hashedPassword})
+      await RedisService.deleteData(`User:${userData.email}`)
+      
+    } catch (error:any) {
+      console.error("Error in verifyEmail:", error.message);
+      throw new Error("Email verification failed");
+    }
+    return {message:"account verified successfully. You can now login."}
   }
 
   // private utility methods

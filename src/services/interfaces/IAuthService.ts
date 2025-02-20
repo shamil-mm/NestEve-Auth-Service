@@ -6,6 +6,7 @@ export interface IAuthService {
     loginAdmin(email:string,password:string,res:Response):Promise<any>
     logout(accessToken:string,res?:Response):Promise<void>
     refreshAccessToken(refreshToken:string):Promise<any>
+    verifyAccount(token:string):Promise<{message:string}>
 }
 export interface Decoded {
         id:string;

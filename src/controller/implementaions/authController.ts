@@ -85,6 +85,16 @@ class AuthController implements IAuthController {
             }
         }
     }
+    async verifyAccount(req: Request, res: Response): Promise<void> {
+        const {token}=req.query;
+        try {
+            const result=await this.authService.verifyAccount(token as string)
+            res.status(201).json(result)
+            
+        } catch (error) {
+            
+        }
+    }
 }
 
 export default AuthController

@@ -26,6 +26,7 @@ class AuthRoutes implements IAuthRoutes{
         this.router.post(`${this.path}/admin/login`,this.authController.adminLogin.bind(this.authController))
         this.router.post(`${this.path}/logout`,this.authMiddleware.handle.bind(this.authMiddleware),this.authController.logout.bind(this.authController))
         this.router.post(`${this.path}/refresh-token`,this.authController.refreshToken.bind(this.authController))
+        this.router.get(`${this.path}/verify-email`,this.authController.verifyAccount.bind(this.authController))
     }
 
 }
