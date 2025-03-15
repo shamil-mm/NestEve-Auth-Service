@@ -1,24 +1,36 @@
-import "reflect-metadata"
-import express, { urlencoded } from "express"
-import container from "./config/diContainer"
-import cors from 'cors'
-import connetDB from "./config/database"
-import cookieParser from 'cookie-parser'
-import AuthRoutes from "./routes/implementations/authRoutes"
+import "reflect-metadata";
+import express, { urlencoded } from "express";
+import container from "./config/diContainer";
+import cors from "cors";
+import connetDB from "./config/database";
+import cookieParser from "cookie-parser";
+import AuthRoutes from "./routes/implementations/authRoutes";
+import { errorHandlerMiddleware } from "./middlewares/errorHandler";
+import AdminRoutes from "./routes/implementations/adminRoutes";
+const app = express();
+app.set("trust proxy", true);
+app.use(express.json());
+app.use(urlencoded({ extended: true }));
 
+app.use(cookieParser());
 
-const app= express()
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
 
-app.use(cors())
-app.use(express.json())
-app.use(cookieParser())
-app.use(urlencoded({extended:true}))
+const authRoutes = container.resolve(AuthRoutes);
+const adminRoutes = container.resolve(AdminRoutes);
+app.use((req, res, next) => {
+  console.log("request recieved in auth service", req.path);
+  next();
+});
 
-
-const authRoutes=container.resolve(AuthRoutes)
-
-app.use("/",authRoutes.router)
-
-connetDB()
+app.use("/", authRoutes.router);
+app.use("/", adminRoutes.router);
+app.use(errorHandlerMiddleware);
+connetDB();
 
 export default app;

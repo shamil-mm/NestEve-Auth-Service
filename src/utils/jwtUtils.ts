@@ -1,32 +1,35 @@
-import jwt from 'jsonwebtoken'
-import config from '../config/config';
-import { Decoded } from '../services/interfaces/IAuthService';
+import jwt from "jsonwebtoken";
+import config from "../config/config";
+import { Decoded } from "../services/interfaces/IAuthService";
 
-
-export const signToken = (user:any)=>{
+export const signToken = (user: any) => {
   try {
-    return jwt.sign({id:user.id,email:user.email,role:user.role},config.jwtSecret,{expiresIn:"1m"})
+    return jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      config.jwtSecret,
+      { expiresIn: "15m" }
+    );
   } catch (error) {
-    console.log("signToken failed")
+    console.log("signToken failed");
   }
-}
+};
 
-export const verifyToken = (token:string,secret:string)=>{
+export const verifyToken = (token: string, secret: string) => {
   try {
-    
-    return jwt.verify(token,secret)
+    return jwt.verify(token, secret);
   } catch (error) {
-    return null
+    return null;
   }
-}
+};
 
-export const refreshTokenCreation=(user:any)=>{
+export const refreshTokenCreation = (user: any) => {
   try {
-    
-    return jwt.sign({id:user._id,email:user.email,role:user.role},config.jwtSecret,{expiresIn:"7d"})
+    return jwt.sign(
+      { id: user._id, email: user.email, role: user.role },
+      config.jwtSecret,
+      { expiresIn: "7d" }
+    );
   } catch (error) {
-    console.log("refresh token failed")
+    console.log("refresh token failed");
   }
-}
-
-
+};

@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { inject, injectable } from "tsyringe";
 import { IAuthService } from "../../services/interfaces/IAuthService";
 import { IAuthController } from "../interfaces/IAuthController";
@@ -7,73 +7,162 @@ import {
   LoginUserSchema,
   RefreshTokenSchema,
   VerifyAccountSchema,
+  forgotPasswordSchema,
+  googleAuthSchema,
 } from "../../validator/userValidator";
 import { z } from "zod";
-
+import { AppError, ValidationError } from "../../error/AppError";
+import config from "../../config/config";
 
 @injectable()
 class AuthController implements IAuthController {
   constructor(@inject("AuthService") private authService: IAuthService) {}
-  async register(req: Request, res: Response): Promise<void> {
+
+  async register(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
+      console.log("register is working");
       const validatedBody = RegisterUserSchema.parse(req.body);
-      await this.authService.registerUser(validatedBody.name, validatedBody.email, validatedBody.password);
+      const result = await this.authService.registerUser(
+        validatedBody.name,
+        validatedBody.email,
+        validatedBody.password,
+        validatedBody.role,
+        validatedBody.organizationName
+      );
+
       res
         .status(201)
-        .json({ message: "verify your email to complete the user creation" });
+        .json({ status: true, message: result.message, data: result.data });
     } catch (error) {
-      const err = error as Error;
       if (error instanceof z.ZodError) {
         console.error("Validation failed:", error.errors);
+        next(new ValidationError("validation failed"));
+      } else if (error instanceof AppError) {
+        next(error);
       } else {
-        res.status(401).json({ error: err.message });
-      }
-    } 
-  }
-  async login(req: Request, res: Response): Promise<void> {
-    try {
-        const validatedBody=LoginUserSchema.parse(req.body)
-      const result = await this.authService.loginUser(validatedBody.email, validatedBody.password, res);
-      res.status(200).json(result);
-    } catch (error) {
-        const err = error as Error;
-      if (err instanceof z.ZodError) {
-        console.error("Validation failed:", err.errors);
-        res.status(401).json({ error: err.errors });
-      } else {
-        res.status(401).json({ error: err.message });
+        next(new AppError("internal Server Error", 500));
       }
     }
   }
-  async adminLogin(req: Request, res: Response): Promise<void> {
+  async login(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      console.log("admin controller is working");
+      console.log("login controller is working");
 
-      const { email, password } = req.body;
-      const result = await this.authService.loginAdmin(email, password, res);
-      res.status(201).json(result);
+      const validatedBody = LoginUserSchema.parse(req.body);
+      const result = await this.authService.loginUser(
+        validatedBody.email,
+        validatedBody.password,
+        validatedBody.role
+      );
+
+      res.cookie("accessToken", result.tokens.accessToken, {
+        httpOnly: true,
+        secure: config.NODE_ENV !== "development",
+        sameSite: "none",
+        maxAge: 15 * 60 * 1000,
+      });
+
+      res.cookie("refreshToken", result.tokens.refreshToken, {
+        httpOnly: true,
+        secure: config.NODE_ENV !== "development",
+        sameSite: "none",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+      res.status(200).json(result);
     } catch (error) {
-        const err = error as Error;
+      const err = error as Error;
       if (err instanceof z.ZodError) {
         console.error("Validation failed:", err.errors);
-        res.status(401).json({ error: err.errors });
+        next(new ValidationError("validation failed"));
+      } else if (error instanceof AppError) {
+        next(error);
       } else {
-        res.status(401).json({ error: err.message });
+        next(new AppError("internal Server Error", 500));
       }
-     
+    }
+  }
+  async adminLogin(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      console.log("adminlogin controller is working");
+
+      const validatedBody = LoginUserSchema.parse(req.body);
+      const result = await this.authService.loginUser(
+        validatedBody.email,
+        validatedBody.password,
+        validatedBody.role
+      );
+
+      res.cookie("admin_accessToken", result.tokens.accessToken, {
+        httpOnly: true,
+        secure: config.NODE_ENV !== "development",
+        sameSite: "none",
+        maxAge: 15 * 60 * 1000,
+      });
+
+      res.cookie("admin_refreshToken", result.tokens.refreshToken, {
+        httpOnly: true,
+        secure: config.NODE_ENV !== "development",
+        sameSite: "none",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+      res.status(200).json(result);
+    } catch (error) {
+      const err = error as Error;
+      if (err instanceof z.ZodError) {
+        console.error("Validation failed:", err.errors);
+        next(new ValidationError("validation failed"));
+      } else if (error instanceof AppError) {
+        next(error);
+      } else {
+        next(new AppError("internal Server Error", 500));
+      }
     }
   }
   async logout(req: Request, res: Response): Promise<void> {
     try {
       console.log("logout controller is working");
-
-      const token = req.header("Authorization")?.replace("Bearer ", "");
-      if (!token) {
-        res.status(400).json({ message: "no token provided" });
-        return;
-      }
-      const result = await this.authService.logout(token, res);
-      res.status(200).json(result);
+      res.clearCookie("accessToken", {
+        httpOnly: true,
+        secure: config.NODE_ENV !== "development",
+        sameSite: "none",
+        maxAge: 0,
+      });
+      res.clearCookie("refreshToken", {
+        httpOnly: true,
+        secure: config.NODE_ENV !== "development",
+        sameSite: "none",
+        maxAge: 0,
+      });
+      res.status(200).json({ success: "User Logout Success" });
+    } catch (error) {
+      const err = error as Error;
+      res.status(401).json({ error: err.message });
+    }
+  }
+  async adminLogout(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("admin logout controller is working");
+      res.clearCookie("admin_accessToken", {
+        httpOnly: true,
+        secure: config.NODE_ENV !== "development",
+        sameSite: "none",
+        maxAge: 0,
+      });
+      res.clearCookie("admin_refreshToken", {
+        httpOnly: true,
+        secure: config.NODE_ENV !== "development",
+        sameSite: "none",
+        maxAge: 0,
+      });
+      res.status(200).json({ success: "User Logout Success" });
     } catch (error) {
       const err = error as Error;
       res.status(401).json({ error: err.message });
@@ -81,10 +170,15 @@ class AuthController implements IAuthController {
   }
   async refreshToken(req: Request, res: Response): Promise<void> {
     try {
-      const { refreshToken } = req.body;
-      const validatedBody=RefreshTokenSchema.parse(req.body)
-      const newToken = await this.authService.refreshAccessToken(validatedBody.refreshToken);
-      res.status(200).json({ token: newToken });
+      const validatedBody = RefreshTokenSchema.parse(req.body);
+      const newToken = await this.authService.refreshAccessToken(
+        validatedBody.refreshToken
+      );
+      if (newToken) {
+        res.status(200).json({ token: newToken });
+      } else {
+        res.status(403).json({ token: newToken });
+      }
     } catch (error) {
       const err = error as Error;
       if (
@@ -92,22 +186,84 @@ class AuthController implements IAuthController {
         err.message === "Refresh token expired"
       ) {
         res.status(401).json({ error: err.message });
-      }else if(err instanceof z.ZodError) {
+      } else if (err instanceof z.ZodError) {
         console.error("Validation failed:", err.errors);
       } else {
-        res.status(500).json({ error: "Internal server error.",err });
+        res.status(500).json({ error: "Internal server error.", err });
       }
-     
     }
   }
   async verifyAccount(req: Request, res: Response): Promise<void> {
-    const { token } = req.query;
-    const validatedBody=VerifyAccountSchema.parse(req.body)
     try {
-      const result = await this.authService.verifyAccount(validatedBody.token as string);
+      // console.log('verificaion controller')
+      // console.log(req.body)
+      const validatedBody = VerifyAccountSchema.parse(req.body);
+      const result = await this.authService.verifyAccount(
+        validatedBody.token as string
+      );
       res.status(201).json(result);
-    } catch (error :any) {
-        res.status(400).json({ message: error.message });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  }
+  async forgotPassword(req: Request, res: Response): Promise<void> {
+    try {
+      const validatedBody = forgotPasswordSchema.parse(req.body);
+      const success = await this.authService.forgotPassword(validatedBody);
+      res.status(201).json(success);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  }
+  async verifyForgotPassword(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("verify forgot  password is working");
+      const validatedBody = VerifyAccountSchema.parse(req.body);
+      const result = await this.authService.verifyForgotPassword(
+        validatedBody.token as string
+      );
+      res.status(200).json(result);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  }
+
+  async googleAuth(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const validatedBody = googleAuthSchema.parse(req.body);
+      const result = await this.authService.googleAuth(validatedBody);
+
+      if (result.status === true) {
+        res.cookie("accessToken", result.tokens.accessToken, {
+          httpOnly: true,
+          secure: config.NODE_ENV !== "development",
+          sameSite: "none",
+          maxAge: 15 * 60 * 1000,
+        });
+
+        res.cookie("refreshToken", result.tokens.refreshToken, {
+          httpOnly: true,
+          secure: config.NODE_ENV !== "development",
+          sameSite: "none",
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+        res.status(200).json(result);
+      }
+      console.log(result);
+    } catch (error) {
+      const err = error as Error;
+      if (err instanceof z.ZodError) {
+        console.error("Validation failed:", err.errors);
+        next(new ValidationError("validation failed"));
+      } else if (error instanceof AppError) {
+        next(error);
+      } else {
+        next(new AppError("internal Server Error", 500));
+      }
     }
   }
 }

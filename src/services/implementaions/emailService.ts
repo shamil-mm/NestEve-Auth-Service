@@ -6,20 +6,21 @@ import { verifyToken } from "../../utils/jwtUtils";
 
 class EmailService {
   static async sentEmail(to: string, subject: string): Promise<void> {
-    console.log(to)
     const emailVerificationToken = Jwt.sign(
-      { to },
+      { to, subject },
       config.EMAIL_SECRET as string,
       { expiresIn: "30m" }
     );
-    console.log("email verification token ",emailVerificationToken)
+    console.log(subject);
+
+    // console.log("email verification token ",emailVerificationToken)
     let verificationLink;
-    if(subject==='email verification otp'){
-       verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${emailVerificationToken}`;
-    }else if(subject==="reset password otp"){
-      verificationLink = `${process.env.FRONTEND_URL}/reset-password?token=${emailVerificationToken}`;
+    if (subject === "email verification otp") {
+      verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${emailVerificationToken}`;
+    } else if (subject === "forgot password otp") {
+      verificationLink = `${process.env.FRONTEND_URL}/forgot-password?token=${emailVerificationToken}`;
     }
-    
+
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -54,4 +55,4 @@ class EmailService {
   }
 }
 
-export default EmailService
+export default EmailService;

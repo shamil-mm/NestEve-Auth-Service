@@ -1,8 +1,6 @@
 import { IUser } from "../../model/interfaces/userInterface";
-export interface IUserRepository {
-  create(user: Partial<IUser>): Promise<IUser>;
+export interface IAdminRepository {
   findByEmail(email: string): Promise<IUser | null>;
+  findAll(): Promise<IUser[]>;
   update(email: string, item: Partial<IUser>): Promise<IUser | null>;
-  findById(id: string): Promise<IUser | null>;
-  delete(id: string): Promise<void>;
 }
