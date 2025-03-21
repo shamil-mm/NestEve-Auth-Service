@@ -20,6 +20,16 @@ const UserSchema: Schema<IUser> = new Schema(
     },
     organizationName: { type: String, default: null },
     is_block: { type: Boolean, default: false },
+    address:[
+      {
+      phone:{type:Number},
+      street:{type:String},
+      city:{type:String},
+      state:{type:String},
+      country:{type:String},
+      zip:{type:Number}
+    }
+    ]
   },
   { timestamps: true }
 );

@@ -24,8 +24,13 @@ import {
   AppError,
   NotFoundError,
   unauthorizedError,
+  ValidationError,
 } from "../../error/AppError";
 import { firebaseApp } from "../../utils/googleAuthVerification";
+
+import { PutObjectCommand,DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import s3Client from "../../utils/s3bucket";
 
 @injectable()
 class AuthService implements IAuthService {
@@ -103,7 +108,14 @@ class AuthService implements IAuthService {
       return {
         status: true,
         message: "Login successful. Welcome back!",
-        data: { email: user.email, role: user.role, is_block: user.is_block },
+        data: {
+          email: user.email,
+          role: user.role,
+          is_block: user.is_block,
+          id: user._id,
+          avatarUrl:user.avatarUrl,
+          name:user.name
+        },
         tokens: { accessToken, refreshToken },
       };
     } catch (error: any) {
@@ -338,6 +350,181 @@ class AuthService implements IAuthService {
         throw error;
       }
       throw new AppError("Failed to login your account", 500);
+    }
+  }
+
+  async currectUser(
+    id: string
+  ): Promise<{ message: string; user: Partial<IUser> }> {
+    const currentUserData = await this.authRepository.findById(id);
+    return {
+      message: "userData successfully collected",
+      user: {
+        name: currentUserData?.name,
+        email: currentUserData?.email,
+        avatarUrl: currentUserData?.avatarUrl,
+        role: currentUserData?.role,
+      },
+    };
+  }
+  async addAddress(
+    email: string,
+    address: {
+      phone:string;
+    street: string;
+    city: string;
+    state: string;
+    country:string;
+    zip: string;
+  
+    }
+  ): Promise<{status:boolean, message: string }> {
+
+    try {
+      const user = await this.authRepository.findByEmail(email);
+      if (!user) {
+        throw new NotFoundError("User Not fount");
+      }
+      if (Array.isArray(user.address)) {
+        if (user.address.length >= 4) {
+          throw new ValidationError("You can only add up to 4 addresss");
+        }
+      }
+      const isDuplicate = Array.isArray(user.address)
+        ? user.address.some(
+            (addr: any) => JSON.stringify(addr.street)===JSON.stringify(address.street) 
+          )
+        : false;
+      if (isDuplicate) {
+        throw new ValidationError("You are trying to add the same address");
+      }
+      const updateAddress = await this.authRepository.addAddress(
+        email,
+        address
+      );
+      return {status:true, message: "Address has been successfully set up" }; 
+    } catch (error:any) {
+      return {status:false, message:error.message };
+      
+    }
+   
+  }
+  async getAddress(
+    id: string
+  ): Promise<{ message: string; address: object[] }> {
+    const addresses = await this.authRepository.getAddresses(id);
+    return { message: "success", address: addresses };
+  }
+  async deleteAddress(userId: string, addressId: string): Promise<{ message: string; }> {
+    await this.authRepository.deleteAddress(userId,addressId)
+    return {message:"deleted successfully"}
+  }
+
+  async updateAddress(email: string,addressId:string,
+    address: {
+      phone?:string;
+    street?: string;
+    city?: string;
+    state?: string;
+    country?:string;
+    zip?: string;
+  
+    }): Promise<({ status: boolean; message: string; })> {
+    try {
+      const user = await this.authRepository.findByEmail(email);
+      if (!user) {
+        throw new NotFoundError("User Not fount");
+      }
+      const isDuplicate = Array.isArray(user.address)
+        ? user.address.some(
+            (addr: any) => JSON.stringify(addr.street)===JSON.stringify(address.street) 
+          )
+        : false;
+      if (isDuplicate) {
+        throw new ValidationError("You are trying to add the same address");
+      }
+      const updateAddress = await this.authRepository.updateAddress(
+        email,
+        addressId,
+       address
+      );
+      return {status:true, message: "Address has been successfully set up" }; 
+    } catch (error:any) {
+      console.log(error.message)
+      return {status:false, message:error.message };  
+    }
+    
+  }
+  async updateName(userId: string, name: string): Promise<{ status:boolean,message: string; }> {
+    try {
+
+      const res=await this.authRepository.updateName(userId,name)
+      return {status:true,message:"name has beed successfully updated"}
+      
+    } catch (error) {
+      return {status:false,message:"name updation failed"}
+    }
+  }
+  async updatePassword(email: string,oldpassword: string, newpassword: string): Promise<{ status: boolean; message: string; }> {
+    try {
+      const user=await this.authRepository.findByEmail(email)
+      let isMatch
+      if(user)isMatch = await this.comparePassword(oldpassword, user?.password);
+
+        if (!isMatch) throw new unauthorizedError("Password not Matching");
+        const hashedPassword=await this.hashPassword(newpassword)
+        await this.authRepository.update(email,{password:hashedPassword})
+    return {status:true,message:"password has beed successfully updated"}
+      
+      
+    } catch (error:any) {
+      return {status:false,message:error.message}
+    }
+  }
+  async generatePresignedUrl(fileName: string, fileType: string): Promise<string> {
+    try {
+      console.log(fileName,'from generatepresigned url service',fileType)
+      const params={
+        Bucket:config.BUCKET_NAME!,
+        Key:fileName as string,
+        ContentType:fileType as string
+      }
+      const command= new PutObjectCommand(params);
+      const url =await getSignedUrl(s3Client,command,{expiresIn:300})
+      return url as string
+      
+    } catch (error:any) {
+      console.error("Error generating pre-signed URL:", error);
+      return error.message
+    }
+  }
+
+  async setImageUrl(imageUrl: string,id:string): Promise<{ status: boolean; message: string; }> {
+
+    try {
+      console.log("imageurl",imageUrl,"userid",id)
+      const user=await this.authRepository.updateById(id,{avatarUrl:imageUrl})
+        return {status:true,message:"imageUrl stored successfully"}
+    } catch (error:any) {
+      return {status:false,message:error.message}
+    }
+  }
+  async deleteImageUrl(imageUrl: string): Promise<{ status: boolean; message: string; }> {
+    try {
+      const key=imageUrl.split('.com/')[1]
+      console.log(key)
+      if(!key){
+        throw new Error('Invalid image Url')
+      }
+      const params={
+        Bucket:config.BUCKET_NAME!,
+        Key:key
+      }
+      await s3Client.send(new DeleteObjectCommand(params))
+      console.log("Old image deleted successfully");
+      return {status:true,message:"imageUrl stored successfully"}
+    } catch (error:any) {
+      return {status:false,message:error.message}
     }
   }
 }

@@ -57,7 +57,48 @@ class AuthRoutes implements IAuthRoutes {
       `${this.path}/verify-forgot-password`,
       this.authController.verifyForgotPassword.bind(this.authController)
     );
+    this.router.get(
+      `${this.path}/currect-user/:id`,
+      this.authController.currentUser.bind(this.authController)
+    )
+    this.router.post(
+      `${this.path}/add-address`,
+      this.authController.addAddress.bind(this.authController)
+    )
+    this.router.post(
+      `${this.path}/update-address`,
+      this.authController.updateAddress.bind(this.authController)
+    )
+    this.router.post(
+      `${this.path}/update-name`,
+      this.authController.updateName.bind(this.authController)
+    )
+    this.router.post(
+      `${this.path}/update-password`,
+      this.authController.updatePassword.bind(this.authController)
+    )
+    this.router.post(
+      `${this.path}/delete-address`,
+      this.authController.deleteAddress.bind(this.authController)
+    )
+    this.router.get(
+      `${this.path}/user-address/:id`,
+      this.authController.getAddress.bind(this.authController)
+    )
+    this.router.get(
+      `${this.path}/generate-presigned-url`,
+      this.authController.generatePresignedUrl.bind(this.authController)
+    )
+    this.router.post(
+      `${this.path}/save-image-url`,
+      this.authController.setImageUrl.bind(this.authController)
+    )
+    this.router.post(
+      `${this.path}/delete-image-url`,
+      this.authController.deleteImageUrl.bind(this.authController)
+    )
   }
 }
+
 
 export default AuthRoutes;

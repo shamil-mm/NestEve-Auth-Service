@@ -266,6 +266,114 @@ class AuthController implements IAuthController {
       }
     }
   }
+
+  async currentUser(req: Request, res: Response): Promise<void> {
+    try {
+      console.log("current user controller is working");
+      const id=req.params.id
+      const result =await this.authService.currectUser(id)
+      res.status(200).json(result)
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  }
+  async addAddress(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const {email,address}=req.body
+      const result= await this.authService.addAddress(email, address)
+      res.status(200).json(result)
+    } catch (error:any) {
+      res.status(400).json({ message: error.message });
+    }
+  }
+  async getAddress(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      console.log("getAddress controller is working");
+      const id=req.params.id
+      const result =await this.authService.getAddress(id)
+      res.status(200).json(result)
+    } catch (error:any) {
+      res.status(400).json({ message: error.message });
+    }
+  }
+  async deleteAddress(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+    const{userId,addressId}=req.body
+    const result=await this.authService.deleteAddress(userId,addressId)
+    res.status(200).json(result)
+    } catch (error:any) {
+      res.status(400).json({ message: error.message });
+    }
+  }
+  async updateAddress(req: Request, res: Response, next: NextFunction):Promise<void> {
+    try {
+      const {email,address,addressId}=req.body
+      console.log('updateaddress is working ',email,address,addressId)
+     
+      const result= await this.authService.updateAddress(email,addressId,address)
+      res.status(200).json(result)
+    } catch (error:any) {
+      res.status(400).json({ message: error.message });
+    }
+  }
+  async updateName(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      console.log('update name is working')
+      const {userId,name}=req.body
+      const result=await this.authService.updateName(userId,name)
+      res.status(200).json(result)
+    } catch (error:any) {
+      res.status(400).json({ message: error.message });
+    }
+  }
+  async updatePassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      console.log("update password is working")
+    const {email,passwords:{oldpassword,newpassword}}=req.body
+    const result=await this.authService.updatePassword(email,oldpassword,newpassword)
+    res.status(200).json(result)  
+    } catch (error:any) {
+      res.status(400).json({ message: error.message });
+    }
+  }
+  async generatePresignedUrl(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      console.log('generate presigned url controller is working')
+      const {fileName,fileType}=req.query
+      
+  if (!fileName || !fileType) {
+     res.status(400).json({ error: "Missing fileName or fileType" });
+  }
+      console.log(fileName,'generate presigned url controller is working',fileType)
+      const url=await this.authService.generatePresignedUrl(fileName as string,fileType  as string)
+      console.log("generatepresigned url is controller is working")
+      res.status(200).json({url})
+      
+    } catch (error:any) {
+      res.status(400).json({ message: error.message }); 
+    }
+  }
+  async setImageUrl(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const{imageUrl,id}=req.body
+      console.log('set image url controller is working ' ,imageUrl)
+      const result=await this.authService.setImageUrl(imageUrl,id)
+      res.status(200).json(result)
+    } catch (error:any) {
+      res.status(400).json({ message: error.message }); 
+    }
+  }
+  async deleteImageUrl(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const{imageUrl}=req.body
+      console.log('delete image url controller is working ' ,imageUrl)
+      const result=await this.authService.deleteImageUrl(imageUrl)
+      res.status(200).json(result)
+      
+    } catch (error:any) {
+      res.status(400).json({ message: error.message });
+    }
+  }
 }
 
 export default AuthController;

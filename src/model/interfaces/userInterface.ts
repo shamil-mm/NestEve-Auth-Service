@@ -9,4 +9,5 @@ export interface IUser extends Document {
   status?: "active" | "suspended" | "deleted";
   organizationName?: string | null;
   is_block: boolean;
+  address:object
 }
