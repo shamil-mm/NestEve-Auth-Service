@@ -10,6 +10,11 @@ import AdminController from "../controller/implementaions/adminController";
 import AdminRoutes from "../routes/implementations/adminRoutes";
 import AdminRepository from "../repositories/implementations/adminRepository";
 import AdminService from "../services/implementaions/adminService";
+import S3Service from "../utils/s3bucket";
+import HealthCheck from "../routes/implementations/healthCheck";
+
+//healthCheck
+container.register("HealthCheck",{useClass:HealthCheck})
 // user
 container.register("AuthRepository", { useClass: AuthRepository });
 container.registerInstance("RedisClient", redisClient);
@@ -17,6 +22,7 @@ container.register("AuthService", { useClass: AuthService });
 container.register("AuthRoutes", { useClass: AuthRoutes });
 container.register("AuthController", { useClass: AuthController });
 container.register("AuthMiddleware", { useClass: AuthMiddleware });
+container.register("S3Service",{useClass:S3Service})
 
 // admin
 container.register("AdminRoutes", { useClass: AdminRoutes });

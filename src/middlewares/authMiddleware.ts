@@ -8,14 +8,14 @@ import config from "../config/config";
 
 @injectable()
 export default class AuthMiddleware {
-  private redisClient: RedisClient;
-  private authService: AuthService;
+  private _redisClient: RedisClient;
+  private _authService: AuthService;
   constructor(
     @inject("RedisClient") redisClient: RedisClient,
     @inject("AuthService") authService: AuthService
   ) {
-    this.redisClient = redisClient;
-    this.authService = authService;
+    this._redisClient = redisClient;
+    this._authService = authService;
   }
 
   public async handle(
@@ -36,12 +36,12 @@ export default class AuthMiddleware {
       ) as Decoded | null;
       console.log(decoded);
       if (!decoded) {
-        await this.tryRefreshToken(req, res, next);
+        await this._tryRefreshToken(req, res, next);
         return;
       }
       const isExpired = Date.now() >= decoded.exp * 1000;
       if (isExpired) {
-        await this.tryRefreshToken(req, res, next, decoded.id);
+        await this._tryRefreshToken(req, res, next, decoded.id);
       }
 
       next();
@@ -51,7 +51,7 @@ export default class AuthMiddleware {
     }
   }
 
-  private async tryRefreshToken(
+  private async _tryRefreshToken(
     req: Request,
     res: Response,
     next: NextFunction,
@@ -77,7 +77,7 @@ export default class AuthMiddleware {
       userId = refreshDecoded.id;
     }
 
-    const storeRefreshToken = await this.redisClient.get(
+    const storeRefreshToken = await this._redisClient.get(
       `refreshToken:${userId}`
     );
 
@@ -85,7 +85,7 @@ export default class AuthMiddleware {
       res.status(401).json({ message: "Failed to refresh access token" });
       return;
     }
-    const newAccessToken = await this.authService.refreshAccessToken(
+    const newAccessToken = await this._authService.refreshAccessToken(
       refreshToken
     );
 

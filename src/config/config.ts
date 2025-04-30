@@ -12,6 +12,6 @@ export default {
     FRONTEND_URL:process.env.FRONTEND_URL,
     BUCKET_NAME:process.env.BUCKET_NAME,
     BUCKET_REGION:process.env.BUCKET_REGION,
-    ACCESS_KEY:process.env.ACCESS_KEY,
-    SECRET_ACCESS_KEY:process.env.SECRET_ACCESS_KEY
+    BUCKET_ACCESS_KEY:process.env.BUCKET_ACCESS_KEY,
+    BUCKET_SECRET_ACCESS_KEY:process.env.BUCKET_SECRET_ACCESS_KEY
 }

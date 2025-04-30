@@ -39,16 +39,18 @@ export interface IAuthService {
   }): Promise<any>;
 
   currectUser(id:string):Promise<{message:string,user:Partial<IUser>}>
-  addAddress(email:string,address:object):Promise<({status:boolean,message:string})>
+  addAddress(email:string,address:object):Promise<({status:boolean,message:string,address?:object})>
   updateAddress(email: string, addressId: string, updatedAddress: object):Promise<({status:boolean,message:string})>
   getAddress(id:string):Promise<{message:string,address:object[]}>
   deleteAddress(userId:string,addressId:string):Promise<{ message: string }>
   updateName(userId:string,name:string):Promise<{status:boolean,message:string}>
   updatePassword(email:string,oldpassword:string,newpassword:string):Promise<{status:boolean,message:string}>
   generatePresignedUrl(fileName:string,fileType:string):Promise<string>
-  setImageUrl(imageUrl:string,id:string):Promise<{status:boolean,message:string}>
+  setImageUrl(params:{fileName:string,fileType:string},id:string):Promise<{status:boolean,message:string}>
   deleteImageUrl(imageUrl:string):Promise<{status:boolean,message:string}>
-
+  uploadImageToServer(file:Express.Multer.File,userId:string,oldImageUrl:string):Promise<{status:boolean,message:string,url?:string}>
+  getProfileImage(avatarUrl:string):Promise<{status:boolean,message:string,url?:string}>
+  deleteProfileImage(id:string,avatarUrl:string):Promise<{status:boolean,message:string}>
 }
 
 export interface Decoded {

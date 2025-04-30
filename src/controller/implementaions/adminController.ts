@@ -6,13 +6,13 @@ import { blockUserSchema } from "../../validator/userValidator";
 
 @injectable()
 class AdminController implements IAdminController {
-  constructor(@inject("AdminService") private adminService: IAdminService) {}
+  constructor(@inject("AdminService") private _adminService: IAdminService) {}
   async getUser(
     req: Request,
     res: Response,
     next: NextFunction
   ): Promise<void> {
-    const users = await this.adminService.getUsers();
+    const users = await this._adminService.getUsers();
     res.status(200).json({ users });
   }
   async getOrganizers(
@@ -20,7 +20,7 @@ class AdminController implements IAdminController {
     res: Response,
     next: NextFunction
   ): Promise<void> {
-    const organizers = await this.adminService.getOrganizers();
+    const organizers = await this._adminService.getOrganizers();
     res.status(200).json({ organizers });
   }
 
@@ -30,7 +30,7 @@ class AdminController implements IAdminController {
     next: NextFunction
   ): Promise<void> {
     const validatedbody = blockUserSchema.parse(req.body);
-    const response = await this.adminService.blockUser(
+    const response = await this._adminService.blockUser(
       validatedbody.email,
       validatedbody.is_block
     );

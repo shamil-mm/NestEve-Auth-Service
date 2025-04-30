@@ -1,5 +1,5 @@
 import { NextFunction, Request, response, Response } from "express";
-import { boolean } from "zod";
+
 export interface IAuthController {
   register(req: Request, res: Response, next: NextFunction): Promise<void>;
   login(req: Request, res: Response, next: NextFunction): Promise<void>;
@@ -21,4 +21,7 @@ export interface IAuthController {
   generatePresignedUrl(req:Request,res:Response,next:NextFunction):Promise<void>
   setImageUrl(req:Request,res:Response,next:NextFunction):Promise<void>
   deleteImageUrl(req:Request,res:Response,next:NextFunction):Promise<void>
+  uploadImageToServer(req:Request,res:Response,next:NextFunction):Promise<void>
+  getProfileImage(req:Request,res:Response,next:NextFunction):Promise<void>
+  deleteProfileImage(req:Request,res:Response,next:NextFunction):Promise<void>
 }

@@ -12,6 +12,8 @@ export const errorHandlerMiddleware: ErrorRequestHandler = (
   next: NextFunction
 ) => {
   const statusCode = "statusCode" in err ? (err as AppError).statusCode : 500;
+  console.log(err);
+  
   console.error("Error:", {
     timestamp: new Date().toISOString(),
     message: err.message,

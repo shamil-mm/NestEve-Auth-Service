@@ -6,9 +6,9 @@ dotenv.config();
 const connetDB = async () => {
     try {
         await mongoose.connect(process.env.MONGO_URI!);
-        console.log("mongodb connected")
+        console.log("auth service mongodb connected")
     } catch (error) {
-        console.log("mogodb connection failed", error)
+        console.log("auth service mogodb connection failed", error)
         process.exit(1)
     }
 }

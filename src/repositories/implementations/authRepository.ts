@@ -41,6 +41,7 @@ class AuthRepository implements IUserRepository {
     )
   }
   async getAddresses(id: string): Promise<object[]> {
+    
     const user= await User.findById(id,{address:1}).lean()
     return Array.isArray(user?.address) ? user.address : []
     

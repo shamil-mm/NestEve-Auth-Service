@@ -13,10 +13,11 @@ import {
 import { z } from "zod";
 import { AppError, ValidationError } from "../../error/AppError";
 import config from "../../config/config";
+import { StatusCodes } from "../../constants/statusCode";
 
 @injectable()
 class AuthController implements IAuthController {
-  constructor(@inject("AuthService") private authService: IAuthService) {}
+  constructor(@inject("AuthService") private _authService: IAuthService) {}
 
   async register(
     req: Request,
@@ -24,9 +25,8 @@ class AuthController implements IAuthController {
     next: NextFunction
   ): Promise<void> {
     try {
-      console.log("register is working");
       const validatedBody = RegisterUserSchema.parse(req.body);
-      const result = await this.authService.registerUser(
+      const result = await this._authService.registerUser(
         validatedBody.name,
         validatedBody.email,
         validatedBody.password,
@@ -35,7 +35,7 @@ class AuthController implements IAuthController {
       );
 
       res
-        .status(201)
+        .status(StatusCodes.CREATED)
         .json({ status: true, message: result.message, data: result.data });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -44,16 +44,14 @@ class AuthController implements IAuthController {
       } else if (error instanceof AppError) {
         next(error);
       } else {
-        next(new AppError("internal Server Error", 500));
+        next(new AppError("internal Server Error", StatusCodes.INTERNAL_SERVER_ERROR));
       }
     }
   }
   async login(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      console.log("login controller is working");
-
       const validatedBody = LoginUserSchema.parse(req.body);
-      const result = await this.authService.loginUser(
+      const result = await this._authService.loginUser(
         validatedBody.email,
         validatedBody.password,
         validatedBody.role
@@ -72,7 +70,7 @@ class AuthController implements IAuthController {
         sameSite: "none",
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
-      res.status(200).json(result);
+      res.status(StatusCodes.OK).json(result);
     } catch (error) {
       const err = error as Error;
       if (err instanceof z.ZodError) {
@@ -81,7 +79,7 @@ class AuthController implements IAuthController {
       } else if (error instanceof AppError) {
         next(error);
       } else {
-        next(new AppError("internal Server Error", 500));
+        next(new AppError("internal Server Error", StatusCodes.INTERNAL_SERVER_ERROR));
       }
     }
   }
@@ -91,10 +89,8 @@ class AuthController implements IAuthController {
     next: NextFunction
   ): Promise<void> {
     try {
-      console.log("adminlogin controller is working");
-
       const validatedBody = LoginUserSchema.parse(req.body);
-      const result = await this.authService.loginUser(
+      const result = await this._authService.loginUser(
         validatedBody.email,
         validatedBody.password,
         validatedBody.role
@@ -113,7 +109,7 @@ class AuthController implements IAuthController {
         sameSite: "none",
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
-      res.status(200).json(result);
+      res.status(StatusCodes.OK).json(result);
     } catch (error) {
       const err = error as Error;
       if (err instanceof z.ZodError) {
@@ -122,13 +118,12 @@ class AuthController implements IAuthController {
       } else if (error instanceof AppError) {
         next(error);
       } else {
-        next(new AppError("internal Server Error", 500));
+        next(new AppError("internal Server Error", StatusCodes.INTERNAL_SERVER_ERROR));
       }
     }
   }
   async logout(req: Request, res: Response): Promise<void> {
     try {
-      console.log("logout controller is working");
       res.clearCookie("accessToken", {
         httpOnly: true,
         secure: config.NODE_ENV !== "development",
@@ -141,15 +136,14 @@ class AuthController implements IAuthController {
         sameSite: "none",
         maxAge: 0,
       });
-      res.status(200).json({ success: "User Logout Success" });
+      res.status(StatusCodes.OK).json({ success: "User Logout Success" });
     } catch (error) {
       const err = error as Error;
-      res.status(401).json({ error: err.message });
+      res.status(StatusCodes.UNAUTHORIZED).json({ error: err.message });
     }
   }
   async adminLogout(req: Request, res: Response): Promise<void> {
     try {
-      console.log("admin logout controller is working");
       res.clearCookie("admin_accessToken", {
         httpOnly: true,
         secure: config.NODE_ENV !== "development",
@@ -162,22 +156,22 @@ class AuthController implements IAuthController {
         sameSite: "none",
         maxAge: 0,
       });
-      res.status(200).json({ success: "User Logout Success" });
+      res.status(StatusCodes.OK).json({ success: "User Logout Success" });
     } catch (error) {
       const err = error as Error;
-      res.status(401).json({ error: err.message });
+      res.status(StatusCodes.UNAUTHORIZED).json({ error: err.message });
     }
   }
   async refreshToken(req: Request, res: Response): Promise<void> {
     try {
       const validatedBody = RefreshTokenSchema.parse(req.body);
-      const newToken = await this.authService.refreshAccessToken(
+      const newToken = await this._authService.refreshAccessToken(
         validatedBody.refreshToken
       );
       if (newToken) {
-        res.status(200).json({ token: newToken });
+        res.status(StatusCodes.OK).json({ token: newToken });
       } else {
-        res.status(403).json({ token: newToken });
+        res.status(StatusCodes.FORBIDDEN).json({ token: newToken });
       }
     } catch (error) {
       const err = error as Error;
@@ -185,46 +179,43 @@ class AuthController implements IAuthController {
         err.message === "Invalid refresh token" ||
         err.message === "Refresh token expired"
       ) {
-        res.status(401).json({ error: err.message });
+        res.status(StatusCodes.UNAUTHORIZED).json({ error: err.message });
       } else if (err instanceof z.ZodError) {
         console.error("Validation failed:", err.errors);
       } else {
-        res.status(500).json({ error: "Internal server error.", err });
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error: "Internal server error.", err });
       }
     }
   }
   async verifyAccount(req: Request, res: Response): Promise<void> {
     try {
-      // console.log('verificaion controller')
-      // console.log(req.body)
       const validatedBody = VerifyAccountSchema.parse(req.body);
-      const result = await this.authService.verifyAccount(
+      const result = await this._authService.verifyAccount(
         validatedBody.token as string
       );
-      res.status(201).json(result);
+      res.status(StatusCodes.CREATED).json(result);
     } catch (error: any) {
-      res.status(400).json({ message: error.message });
+      res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
     }
   }
   async forgotPassword(req: Request, res: Response): Promise<void> {
     try {
       const validatedBody = forgotPasswordSchema.parse(req.body);
-      const success = await this.authService.forgotPassword(validatedBody);
-      res.status(201).json(success);
+      const success = await this._authService.forgotPassword(validatedBody);
+      res.status(StatusCodes.CREATED).json(success);
     } catch (error: any) {
-      res.status(400).json({ message: error.message });
+      res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
     }
   }
   async verifyForgotPassword(req: Request, res: Response): Promise<void> {
     try {
-      console.log("verify forgot  password is working");
       const validatedBody = VerifyAccountSchema.parse(req.body);
-      const result = await this.authService.verifyForgotPassword(
+      const result = await this._authService.verifyForgotPassword(
         validatedBody.token as string
       );
-      res.status(200).json(result);
+      res.status(StatusCodes.OK).json(result);
     } catch (error: any) {
-      res.status(400).json({ message: error.message });
+      res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
     }
   }
 
@@ -235,7 +226,7 @@ class AuthController implements IAuthController {
   ): Promise<void> {
     try {
       const validatedBody = googleAuthSchema.parse(req.body);
-      const result = await this.authService.googleAuth(validatedBody);
+      const result = await this._authService.googleAuth(validatedBody);
 
       if (result.status === true) {
         res.cookie("accessToken", result.tokens.accessToken, {
@@ -251,9 +242,8 @@ class AuthController implements IAuthController {
           sameSite: "none",
           maxAge: 7 * 24 * 60 * 60 * 1000,
         });
-        res.status(200).json(result);
+        res.status(StatusCodes.OK).json(result);
       }
-      console.log(result);
     } catch (error) {
       const err = error as Error;
       if (err instanceof z.ZodError) {
@@ -262,116 +252,216 @@ class AuthController implements IAuthController {
       } else if (error instanceof AppError) {
         next(error);
       } else {
-        next(new AppError("internal Server Error", 500));
+        next(new AppError("internal Server Error", StatusCodes.INTERNAL_SERVER_ERROR));
       }
     }
   }
 
   async currentUser(req: Request, res: Response): Promise<void> {
     try {
-      console.log("current user controller is working");
-      const id=req.params.id
-      const result =await this.authService.currectUser(id)
-      res.status(200).json(result)
+      const id = req.params.id;
+      const result = await this._authService.currectUser(id);
+      res.status(StatusCodes.OK).json(result);
     } catch (error: any) {
-      res.status(400).json({ message: error.message });
+      res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
     }
   }
-  async addAddress(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async addAddress(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
-      const {email,address}=req.body
-      const result= await this.authService.addAddress(email, address)
-      res.status(200).json(result)
-    } catch (error:any) {
-      res.status(400).json({ message: error.message });
+      const { email, address } = req.body;
+      const result = await this._authService.addAddress(email, address);
+      res.status(StatusCodes.OK).json(result);
+    } catch (error: any) {
+      res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
     }
   }
-  async getAddress(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getAddress(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
-      console.log("getAddress controller is working");
-      const id=req.params.id
-      const result =await this.authService.getAddress(id)
-      res.status(200).json(result)
-    } catch (error:any) {
-      res.status(400).json({ message: error.message });
+      const id = req.params.id;
+      const result = await this._authService.getAddress(id);
+      res.status(StatusCodes.OK).json(result);
+    } catch (error: any) {
+      res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
     }
   }
-  async deleteAddress(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async deleteAddress(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
-    const{userId,addressId}=req.body
-    const result=await this.authService.deleteAddress(userId,addressId)
-    res.status(200).json(result)
-    } catch (error:any) {
-      res.status(400).json({ message: error.message });
+      const { userId, addressId } = req.body;
+      const result = await this._authService.deleteAddress(userId, addressId);
+      res.status(StatusCodes.OK).json(result);
+    } catch (error: any) {
+      res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
     }
   }
-  async updateAddress(req: Request, res: Response, next: NextFunction):Promise<void> {
+  async updateAddress(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
-      const {email,address,addressId}=req.body
-      console.log('updateaddress is working ',email,address,addressId)
+      const { email, address, addressId } = req.body;
+
+      const result = await this._authService.updateAddress(
+        email,
+        addressId,
+        address
+      );
+      res.status(StatusCodes.OK).json(result);
+    } catch (error: any) {
+      res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
+    }
+  }
+  async updateName(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { userId, name } = req.body;
+      const result = await this._authService.updateName(userId, name);
+      res.status(StatusCodes.OK).json(result);
+    } catch (error: any) {
+      res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
+    }
+  }
+  async updatePassword(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const {
+        email,
+        passwords: { oldpassword, newpassword },
+      } = req.body;
+      const result = await this._authService.updatePassword(
+        email,
+        oldpassword,
+        newpassword
+      );
+      res.status(StatusCodes.OK).json(result);
+    } catch (error: any) {
+      res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
+    }
+  }
+  async generatePresignedUrl(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { fileName, fileType } = req.query;
+
+      if (!fileName || !fileType) {
+        res.status(StatusCodes.BAD_REQUEST).json({ error: "Missing fileName or fileType" });
+        return
+      }
+
+      const url = await this._authService.generatePresignedUrl(
+        fileName as string,
+        fileType as string
+      );
+
+      res.status(StatusCodes.OK).json({ url });
+    } catch (error: any) {
+      res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
+    }
+  }
+  async setImageUrl(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { params, id } = req.body;
+
+      const result = await this._authService.setImageUrl(params, id);
+      res.status(StatusCodes.OK).json(result);
+    } catch (error: any) {
+      res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
+    }
+  }
+  async deleteImageUrl(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { imageUrl } = req.body;
+
+      const result = await this._authService.deleteImageUrl(imageUrl);
+      res.status(StatusCodes.OK).json(result);
+    } catch (error: any) {
+      res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
+    }
+  }
+  async uploadImageToServer(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      if (!req.file) {
+        throw new AppError("No file uploaded", StatusCodes.UNAUTHORIZED);
+      }
+      const { userId, oldImageUrl } = req.body;
+
+      const response = await this._authService.uploadImageToServer(
+        req.file,
+        userId,
+        oldImageUrl
+      );
+      res.status(StatusCodes.OK).json(response);
+    } catch (error: any) {
+      console.log(error);
+      res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
+    }
+  }
+  async getProfileImage(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
      
-      const result= await this.authService.updateAddress(email,addressId,address)
-      res.status(200).json(result)
-    } catch (error:any) {
-      res.status(400).json({ message: error.message });
-    }
-  }
-  async updateName(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      console.log('update name is working')
-      const {userId,name}=req.body
-      const result=await this.authService.updateName(userId,name)
-      res.status(200).json(result)
-    } catch (error:any) {
-      res.status(400).json({ message: error.message });
-    }
-  }
-  async updatePassword(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      console.log("update password is working")
-    const {email,passwords:{oldpassword,newpassword}}=req.body
-    const result=await this.authService.updatePassword(email,oldpassword,newpassword)
-    res.status(200).json(result)  
-    } catch (error:any) {
-      res.status(400).json({ message: error.message });
-    }
-  }
-  async generatePresignedUrl(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      console.log('generate presigned url controller is working')
-      const {fileName,fileType}=req.query
+      const { avatarUrl } = req.query;
+      if (avatarUrl) {
+        const response = await this._authService.getProfileImage(
+          avatarUrl as string
+        );
       
-  if (!fileName || !fileType) {
-     res.status(400).json({ error: "Missing fileName or fileType" });
-  }
-      console.log(fileName,'generate presigned url controller is working',fileType)
-      const url=await this.authService.generatePresignedUrl(fileName as string,fileType  as string)
-      console.log("generatepresigned url is controller is working")
-      res.status(200).json({url})
-      
-    } catch (error:any) {
-      res.status(400).json({ message: error.message }); 
+        res.status(StatusCodes.OK).json(response);
+      }
+      res.status(StatusCodes.OK).json({message:'profile not added'})
+    } catch (error: any) {
+      console.log(error);
+      res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
     }
   }
-  async setImageUrl(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async deleteProfileImage(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
-      const{imageUrl,id}=req.body
-      console.log('set image url controller is working ' ,imageUrl)
-      const result=await this.authService.setImageUrl(imageUrl,id)
-      res.status(200).json(result)
-    } catch (error:any) {
-      res.status(400).json({ message: error.message }); 
-    }
-  }
-  async deleteImageUrl(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const{imageUrl}=req.body
-      console.log('delete image url controller is working ' ,imageUrl)
-      const result=await this.authService.deleteImageUrl(imageUrl)
-      res.status(200).json(result)
-      
-    } catch (error:any) {
-      res.status(400).json({ message: error.message });
+      const { id, avatarUrl } = req.body;
+      const response = await this._authService.deleteProfileImage(id, avatarUrl);
+      res.status(StatusCodes.OK).json(response);
+    } catch (error: any) {
+      console.log(error);
+      res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
     }
   }
 }

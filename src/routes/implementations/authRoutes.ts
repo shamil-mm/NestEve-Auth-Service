@@ -1,102 +1,118 @@
 import { Router } from "express";
 import { inject, injectable } from "tsyringe";
+import upload from "../../utils/multerConfig";
 import { IAuthController } from "../../controller/interfaces/IAuthController";
 import { IAuthRoutes } from "../interfaces/IAuthRoutes";
 import AuthMiddleware from "../../middlewares/authMiddleware";
+
 
 @injectable()
 class AuthRoutes implements IAuthRoutes {
   public path = "/api";
   public router = Router();
 
+
   constructor(
-    @inject("AuthController") private authController: IAuthController,
+    @inject("AuthController") private _authController: IAuthController,
     @inject("AuthMiddleware") private authMiddleware: AuthMiddleware
   ) {
-    this.initializeRoutes();
+    this._initializeRoutes();
   }
 
-  private initializeRoutes() {
+  private _initializeRoutes() {
     this.router.post(
       `${this.path}/register`,
-      this.authController.register.bind(this.authController)
+      this._authController.register.bind(this._authController)
     );
     this.router.post(
       `${this.path}/login`,
-      this.authController.login.bind(this.authController)
+      this._authController.login.bind(this._authController)
     );
     this.router.post(
       `${this.path}/admin-login`,
-      this.authController.adminLogin.bind(this.authController)
+      this._authController.adminLogin.bind(this._authController)
     );
     this.router.post(
       `${this.path}/logout`,
-      this.authController.logout.bind(this.authController)
+      this._authController.logout.bind(this._authController)
     );
     this.router.post(
       `${this.path}/admin-logout`,
-      this.authController.adminLogout.bind(this.authController)
+      this._authController.adminLogout.bind(this._authController)
     );
     this.router.post(
       `${this.path}/refresh-token`,
-      this.authController.refreshToken.bind(this.authController)
+      this._authController.refreshToken.bind(this._authController)
     );
     this.router.post(
       `${this.path}/verify-email`,
-      this.authController.verifyAccount.bind(this.authController)
+      this._authController.verifyAccount.bind(this._authController)
     );
     this.router.post(
       `${this.path}/forgot-password`,
-      this.authController.forgotPassword.bind(this.authController)
+      this._authController.forgotPassword.bind(this._authController)
     );
     this.router.post(
       `${this.path}/google-auth`,
-      this.authController.googleAuth.bind(this.authController)
+      this._authController.googleAuth.bind(this._authController)
     );
     this.router.post(
       `${this.path}/verify-forgot-password`,
-      this.authController.verifyForgotPassword.bind(this.authController)
+      this._authController.verifyForgotPassword.bind(this._authController)
     );
     this.router.get(
       `${this.path}/currect-user/:id`,
-      this.authController.currentUser.bind(this.authController)
+      this._authController.currentUser.bind(this._authController)
     )
     this.router.post(
       `${this.path}/add-address`,
-      this.authController.addAddress.bind(this.authController)
+      this._authController.addAddress.bind(this._authController)
     )
     this.router.post(
       `${this.path}/update-address`,
-      this.authController.updateAddress.bind(this.authController)
+      this._authController.updateAddress.bind(this._authController)
     )
     this.router.post(
       `${this.path}/update-name`,
-      this.authController.updateName.bind(this.authController)
+      this._authController.updateName.bind(this._authController)
     )
     this.router.post(
       `${this.path}/update-password`,
-      this.authController.updatePassword.bind(this.authController)
+      this._authController.updatePassword.bind(this._authController)
     )
     this.router.post(
       `${this.path}/delete-address`,
-      this.authController.deleteAddress.bind(this.authController)
+      this._authController.deleteAddress.bind(this._authController)
     )
     this.router.get(
       `${this.path}/user-address/:id`,
-      this.authController.getAddress.bind(this.authController)
+      this._authController.getAddress.bind(this._authController)
     )
     this.router.get(
       `${this.path}/generate-presigned-url`,
-      this.authController.generatePresignedUrl.bind(this.authController)
+      this._authController.generatePresignedUrl.bind(this._authController)
     )
     this.router.post(
       `${this.path}/save-image-url`,
-      this.authController.setImageUrl.bind(this.authController)
+      this._authController.setImageUrl.bind(this._authController)
     )
     this.router.post(
       `${this.path}/delete-image-url`,
-      this.authController.deleteImageUrl.bind(this.authController)
+      this._authController.deleteImageUrl.bind(this._authController)
     )
+    this.router.post(
+      `${this.path}/upload-image-to-server`,
+      upload.single("image"),
+      this._authController.uploadImageToServer.bind(this._authController)
+    );
+    this.router.get(
+      `${this.path}/get-profileImage`,
+      this._authController.getProfileImage.bind(this._authController)
+    );
+    this.router.post(
+      `${this.path}/delete-profileImage`,
+      this._authController.deleteProfileImage.bind(this._authController)
+    );
   }
 }
 

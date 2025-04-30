@@ -3,8 +3,42 @@ export const Messages = {
     LOGIN_SUCCESS: 'Login successful',
     INVALID_CREDENTIALS: 'Invalid email or password',
     USER_NOT_FOUND: 'User not found',
+
+
     EMAIL_VERIFICATION_SUBJECT:'email verification otp',
     RESET_PASSWORD_SUBJECT:'reset password otp',
-    FORGOT_PASSWORD_SUBJECT:'forgot password otp'
+    FORGOT_PASSWORD_SUBJECT:'forgot password otp',
+
+    USER_ALREADY_EXISTS: "User already exists",
+    EMAIL_SENDING:'Email sent to the user',
+    EMAIL_VERIFICATION_FAILURE:"Failed to send verification email",
+    EMAIL_VERIFICATION_ERROR:"Failed to send verification email",
+    PASSWORD_MISMATCH:'Password not Matching',
+    ROLE_MISMATCH:'Role mismatching',
+    BlOCKED:"You are blocked by Admin",
+    LOGIN_SUCCESSFULL:"Login successful. Welcome back!",
+    LOGIN_FAILURE:"Failed to login your account",
+    TOKEN_FAILURE:"Invalid or expired token",
+    TOKEN_ERROR:"Failed to verifying token",
+    ALREADY_VARIFIED_SUCCESS:"Account already verified. You can now login",
+    VARIFIED_SUCCESS:"Account verified successfully. You can login now.",
+    FORGOT_PASSWORD_SUCCESS:"forgot password verificaion on process verify to proceed",
+    FORGOT_PASSWORD_FAILURE:"Forgot password verification failed",
+    NEW_PASSWORD_SUCCESS:"new password successfully updated",
+    GOOGLE_SIGN_SUCCESS:"You have successfully signed in with Google",
+    GOOGLE_SIGN_FAILURE:"Failed to signed in with Google",
+    User_DATA_COLLECTION_SUCCESS:"userData successfully collected",
+    ADDRESS_COUNT_LIMIT:"You can only add up to 4 addresss",
+    SAME_ADDRESS_ERROR:"You are trying to add the same address",
+    ADDRESS_SUCCESS:"Address has been successfully set up",
+    GET_ADDRESS_SUCCESS:"Get address successfully",
+    DELECT_ADDRESS_SUCCESS:"Delete address successfully",
+    NAME_UPDATE_SUCCESS:"Name has beed successfully updated",
+    NAME_UPDATE_FAILURE:"Name has beed failed to update",
+    PASSWORD_UPDATE_SUCCESS:"Password has beed successfully updated",
+    IMAGE_URL_SUCCESS:"ImageUrl stored successfully",
+    IMAGE_URL_FAILURE:"ImageUrl  failed to store",
+    IMAGE_STORE_SUCCESS:"Image successfully stored",
+    IMAGE_DELETE_SUCESS:"Profile-image successfully deleted"
   };
   

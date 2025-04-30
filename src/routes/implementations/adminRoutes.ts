@@ -8,22 +8,22 @@ class AdminRoutes implements IAdminRoutes {
   public path = "/api";
   public router = Router();
   constructor(
-    @inject("AdminController") private adminController: IAdminController
+    @inject("AdminController") private _adminController: IAdminController
   ) {
-    this.initializeRoutes();
+    this._initializeRoutes();
   }
-  private initializeRoutes() {
+  private _initializeRoutes() {
     this.router.get(
       `${this.path}/admin-get-users`,
-      this.adminController.getUser.bind(this.adminController)
+      this._adminController.getUser.bind(this._adminController)
     );
     this.router.get(
       `${this.path}/admin-get-organizers`,
-      this.adminController.getOrganizers.bind(this.adminController)
+      this._adminController.getOrganizers.bind(this._adminController)
     );
     this.router.post(
       `${this.path}/admin-block-user`,
-      this.adminController.blockUser.bind(this.adminController)
+      this._adminController.blockUser.bind(this._adminController)
     );
   }
 }

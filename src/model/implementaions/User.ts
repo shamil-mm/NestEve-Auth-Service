@@ -7,7 +7,7 @@ const UserSchema: Schema<IUser> = new Schema(
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: false },
-    avatarUrl: { type: String, default: "" },
+    avatarUrl: { type:String, default:null},
     status: {
       type: String,
       enum: ["active", "suspended", "deleted"],
