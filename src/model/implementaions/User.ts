@@ -20,19 +20,21 @@ const UserSchema: Schema<IUser> = new Schema(
     },
     organizationName: { type: String, default: null },
     is_block: { type: Boolean, default: false },
-    address:[
-      {
-      phone:{type:Number},
-      street:{type:String},
-      city:{type:String},
-      state:{type:String},
-      country:{type:String},
-      zip:{type:Number}
-    }
-    ]
+    location:{
+      type:{
+        type:String,
+        enum:['Point'],
+        default:'Point'
+      },
+      coordinates:{
+        type:[Number],
+        default:[0,0],
+      }
+    },
   },
   { timestamps: true }
 );
 
+UserSchema.index({location:"2dsphere"})
 const User = mongoose.model<IUser>("User", UserSchema);
 export default User;

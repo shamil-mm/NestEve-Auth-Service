@@ -201,6 +201,7 @@ class AuthService implements IAuthService {
         name: string;
         hashedPassword: string;
       };
+     
       const existingUser = await this._authRepository.findByEmail(
         userData.email
       );
@@ -219,8 +220,9 @@ class AuthService implements IAuthService {
           role: userData.role,
           organizationName: userData.organizationName,
         });
+        console.log('user',user)
 
-        if (user && user.role === "organizer") {
+        if (user) {
           try {
             await new UserCreateProducer(
               kafkaWrapper.producer as Producer
@@ -361,103 +363,11 @@ class AuthService implements IAuthService {
         email: currentUserData?.email,
         avatarUrl: currentUserData?.avatarUrl,
         role: currentUserData?.role,
+        location:currentUserData?.location
       },
     };
   }
-  async addAddress(
-    email: string,
-    address: {
-      phone: string;
-      street: string;
-      city: string;
-      state: string;
-      country: string;
-      zip: string;
-    }
-  ): Promise<{ status: boolean; message: string; address?: object }> {
-    try {
-      const user = await this._authRepository.findByEmail(email);
-      if (!user) {
-        throw new NotFoundError(Messages.USER_NOT_FOUND);
-      }
-      if (Array.isArray(user.address)) {
-        if (user.address.length >= 4) {
-          throw new ValidationError(Messages.ADDRESS_COUNT_LIMIT);
-        }
-      }
-      const isDuplicate = Array.isArray(user.address)
-        ? user.address.some(
-            (addr: any) =>
-              JSON.stringify(addr.street) === JSON.stringify(address.street)
-          )
-        : false;
-      if (isDuplicate) {
-        throw new ValidationError(Messages.SAME_ADDRESS_ERROR);
-      }
-      const addedAddress = await this._authRepository.addAddress(
-        email,
-        address
-      );
-
-      return {
-        status: true,
-        message: Messages.ADDRESS_SUCCESS,
-        address,
-      };
-    } catch (error: any) {
-      return { status: false, message: error.message };
-    }
-  }
-  async getAddress(
-    id: string
-  ): Promise<{ message: string; address: object[] }> {
-    const addresses = await this._authRepository.getAddresses(id);
-    return { message: Messages.GET_ADDRESS_SUCCESS, address: addresses };
-  }
-  async deleteAddress(
-    userId: string,
-    addressId: string
-  ): Promise<{ message: string }> {
-    await this._authRepository.deleteAddress(userId, addressId);
-    return { message: Messages.DELECT_ADDRESS_SUCCESS };
-  }
-
-  async updateAddress(
-    email: string,
-    addressId: string,
-    address: {
-      phone?: string;
-      street?: string;
-      city?: string;
-      state?: string;
-      country?: string;
-      zip?: string;
-    }
-  ): Promise<{ status: boolean; message: string }> {
-    try {
-      const user = await this._authRepository.findByEmail(email);
-      if (!user) {
-        throw new NotFoundError(Messages.USER_NOT_FOUND);
-      }
-      const isDuplicate = Array.isArray(user.address)
-        ? user.address.some(
-            (addr: any) =>
-              JSON.stringify(addr.street) === JSON.stringify(address.street)
-          )
-        : false;
-      if (isDuplicate) {
-        throw new ValidationError(Messages.SAME_ADDRESS_ERROR);
-      }
-      const updateAddress = await this._authRepository.updateAddress(
-        email,
-        addressId,
-        address
-      );
-      return { status: true, message: Messages.ADDRESS_SUCCESS };
-    } catch (error: any) {
-      return { status: false, message: error.message };
-    }
-  }
+  
   async updateName(
     userId: string,
     name: string
@@ -604,6 +514,18 @@ class AuthService implements IAuthService {
     } catch (error: any) {
       console.log(error);
       return { status: false, message: error.message };
+    }
+  }
+
+  async saveLocation(lat: number, lng: number,userId:string): Promise<{ message: string; }> {
+    try {
+      console.log(lat,lng,userId)
+       await this._authRepository.updateById(userId, { location:{type:'Point',coordinates:[lng,lat]} });
+      return {message:'Location updated successfully'}
+      
+    } catch (error:any) {
+       console.log(error);
+      return {  message: error.message };
     }
   }
 }

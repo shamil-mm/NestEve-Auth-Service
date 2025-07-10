@@ -65,28 +65,12 @@ class AuthRoutes implements IAuthRoutes {
       this._authController.currentUser.bind(this._authController)
     )
     this.router.post(
-      `${this.path}/add-address`,
-      this._authController.addAddress.bind(this._authController)
-    )
-    this.router.post(
-      `${this.path}/update-address`,
-      this._authController.updateAddress.bind(this._authController)
-    )
-    this.router.post(
       `${this.path}/update-name`,
       this._authController.updateName.bind(this._authController)
     )
     this.router.post(
       `${this.path}/update-password`,
       this._authController.updatePassword.bind(this._authController)
-    )
-    this.router.post(
-      `${this.path}/delete-address`,
-      this._authController.deleteAddress.bind(this._authController)
-    )
-    this.router.get(
-      `${this.path}/user-address/:id`,
-      this._authController.getAddress.bind(this._authController)
     )
     this.router.get(
       `${this.path}/generate-presigned-url`,
@@ -112,6 +96,10 @@ class AuthRoutes implements IAuthRoutes {
     this.router.post(
       `${this.path}/delete-profileImage`,
       this._authController.deleteProfileImage.bind(this._authController)
+    );
+    this.router.post(
+      `${this.path}/location`,
+      this._authController.saveLocation.bind(this._authController)
     );
   }
 }

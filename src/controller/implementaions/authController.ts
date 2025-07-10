@@ -14,6 +14,7 @@ import { z } from "zod";
 import { AppError, ValidationError } from "../../error/AppError";
 import config from "../../config/config";
 import { StatusCodes } from "../../constants/statusCode";
+import { saveLocationSchema } from "../../dto/auth/SaveLocationDTO";
 
 @injectable()
 class AuthController implements IAuthController {
@@ -266,63 +267,7 @@ class AuthController implements IAuthController {
       res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
     }
   }
-  async addAddress(
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> {
-    try {
-      const { email, address } = req.body;
-      const result = await this._authService.addAddress(email, address);
-      res.status(StatusCodes.OK).json(result);
-    } catch (error: any) {
-      res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
-    }
-  }
-  async getAddress(
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> {
-    try {
-      const id = req.params.id;
-      const result = await this._authService.getAddress(id);
-      res.status(StatusCodes.OK).json(result);
-    } catch (error: any) {
-      res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
-    }
-  }
-  async deleteAddress(
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> {
-    try {
-      const { userId, addressId } = req.body;
-      const result = await this._authService.deleteAddress(userId, addressId);
-      res.status(StatusCodes.OK).json(result);
-    } catch (error: any) {
-      res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
-    }
-  }
-  async updateAddress(
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> {
-    try {
-      const { email, address, addressId } = req.body;
-
-      const result = await this._authService.updateAddress(
-        email,
-        addressId,
-        address
-      );
-      res.status(StatusCodes.OK).json(result);
-    } catch (error: any) {
-      res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
-    }
-  }
+ 
   async updateName(
     req: Request,
     res: Response,
@@ -463,6 +408,27 @@ class AuthController implements IAuthController {
       console.log(error);
       res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
     }
+  }
+
+
+  async saveLocation(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const parseResult = saveLocationSchema.safeParse(req.body)
+      if(!parseResult.success){
+        res.status(400).json({
+          message:"Invalid location data",
+          errors:parseResult.error.flatten().fieldErrors
+        })
+        return
+      }
+      const {location:{lat,lng},userId}=parseResult.data
+      const response = await this._authService.saveLocation(lat,lng,userId);
+      res.status(StatusCodes.OK).json("Location saved successfully");
+    } catch (error: any) {
+      console.log(error);
+      res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
+    }
+
   }
 }
 

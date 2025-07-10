@@ -12,10 +12,6 @@ export interface IAuthController {
   verifyForgotPassword(req: Request, res: Response): Promise<void>;
   googleAuth(req: Request, res: Response, next: NextFunction): Promise<void>;
   currentUser(req:Request,res:Response,next:NextFunction):Promise<void>
-  addAddress(req:Request,res:Response,next:NextFunction):Promise<void>
-  updateAddress(req:Request,res:Response,next:NextFunction):Promise<void>
-  getAddress(req:Request,res:Response,next:NextFunction):Promise<void>
-  deleteAddress(req:Request,res:Response,next:NextFunction):Promise<void>
   updateName(req:Request,res:Response,next:NextFunction):Promise<void>
   updatePassword(req:Request,res:Response,next:NextFunction):Promise<void>
   generatePresignedUrl(req:Request,res:Response,next:NextFunction):Promise<void>
@@ -24,4 +20,5 @@ export interface IAuthController {
   uploadImageToServer(req:Request,res:Response,next:NextFunction):Promise<void>
   getProfileImage(req:Request,res:Response,next:NextFunction):Promise<void>
   deleteProfileImage(req:Request,res:Response,next:NextFunction):Promise<void>
+  saveLocation(req:Request,res:Response,next:NextFunction):Promise<void>
 }
