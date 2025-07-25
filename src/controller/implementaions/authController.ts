@@ -3,7 +3,7 @@ import { inject, injectable } from "tsyringe";
 import { IAuthService } from "../../services/interfaces/IAuthService";
 import { IAuthController } from "../interfaces/IAuthController";
 import {
-  RegisterUserSchema,
+  
   LoginUserSchema,
   RefreshTokenSchema,
   VerifyAccountSchema,
@@ -14,7 +14,10 @@ import { z } from "zod";
 import { AppError, ValidationError } from "../../error/AppError";
 import config from "../../config/config";
 import { StatusCodes } from "../../constants/statusCode";
-import { saveLocationSchema } from "../../dto/auth/SaveLocationDTO";
+
+import { RegisterUserDTO } from "../../dto/RequestDTO/registerUser.dto";
+
+
 
 @injectable()
 class AuthController implements IAuthController {
@@ -26,7 +29,7 @@ class AuthController implements IAuthController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const validatedBody = RegisterUserSchema.parse(req.body);
+      const validatedBody = RegisterUserDTO.parse(req.body);
       const result = await this._authService.registerUser(
         validatedBody.name,
         validatedBody.email,
@@ -35,6 +38,7 @@ class AuthController implements IAuthController {
         validatedBody.organizationName
       );
 
+      
       res
         .status(StatusCodes.CREATED)
         .json({ status: true, message: result.message, data: result.data });
@@ -45,7 +49,12 @@ class AuthController implements IAuthController {
       } else if (error instanceof AppError) {
         next(error);
       } else {
-        next(new AppError("internal Server Error", StatusCodes.INTERNAL_SERVER_ERROR));
+        next(
+          new AppError(
+            "internal Server Error",
+            StatusCodes.INTERNAL_SERVER_ERROR
+          )
+        );
       }
     }
   }
@@ -71,6 +80,8 @@ class AuthController implements IAuthController {
         sameSite: "none",
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
+
+      
       res.status(StatusCodes.OK).json(result);
     } catch (error) {
       const err = error as Error;
@@ -80,7 +91,12 @@ class AuthController implements IAuthController {
       } else if (error instanceof AppError) {
         next(error);
       } else {
-        next(new AppError("internal Server Error", StatusCodes.INTERNAL_SERVER_ERROR));
+        next(
+          new AppError(
+            "internal Server Error",
+            StatusCodes.INTERNAL_SERVER_ERROR
+          )
+        );
       }
     }
   }
@@ -119,7 +135,12 @@ class AuthController implements IAuthController {
       } else if (error instanceof AppError) {
         next(error);
       } else {
-        next(new AppError("internal Server Error", StatusCodes.INTERNAL_SERVER_ERROR));
+        next(
+          new AppError(
+            "internal Server Error",
+            StatusCodes.INTERNAL_SERVER_ERROR
+          )
+        );
       }
     }
   }
@@ -184,7 +205,9 @@ class AuthController implements IAuthController {
       } else if (err instanceof z.ZodError) {
         console.error("Validation failed:", err.errors);
       } else {
-        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error: "Internal server error.", err });
+        res
+          .status(StatusCodes.INTERNAL_SERVER_ERROR)
+          .json({ error: "Internal server error.", err });
       }
     }
   }
@@ -253,7 +276,12 @@ class AuthController implements IAuthController {
       } else if (error instanceof AppError) {
         next(error);
       } else {
-        next(new AppError("internal Server Error", StatusCodes.INTERNAL_SERVER_ERROR));
+        next(
+          new AppError(
+            "internal Server Error",
+            StatusCodes.INTERNAL_SERVER_ERROR
+          )
+        );
       }
     }
   }
@@ -267,7 +295,7 @@ class AuthController implements IAuthController {
       res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
     }
   }
- 
+
   async updateName(
     req: Request,
     res: Response,
@@ -310,8 +338,10 @@ class AuthController implements IAuthController {
       const { fileName, fileType } = req.query;
 
       if (!fileName || !fileType) {
-        res.status(StatusCodes.BAD_REQUEST).json({ error: "Missing fileName or fileType" });
-        return
+        res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ error: "Missing fileName or fileType" });
+        return;
       }
 
       const url = await this._authService.generatePresignedUrl(
@@ -380,16 +410,15 @@ class AuthController implements IAuthController {
     next: NextFunction
   ): Promise<void> {
     try {
-     
       const { avatarUrl } = req.query;
       if (avatarUrl) {
         const response = await this._authService.getProfileImage(
           avatarUrl as string
         );
-      
+
         res.status(StatusCodes.OK).json(response);
       }
-      res.status(StatusCodes.OK).json({message:'profile not added'})
+      res.status(StatusCodes.OK).json({ message: "profile not added" });
     } catch (error: any) {
       console.log(error);
       res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
@@ -402,7 +431,10 @@ class AuthController implements IAuthController {
   ): Promise<void> {
     try {
       const { id, avatarUrl } = req.body;
-      const response = await this._authService.deleteProfileImage(id, avatarUrl);
+      const response = await this._authService.deleteProfileImage(
+        id,
+        avatarUrl
+      );
       res.status(StatusCodes.OK).json(response);
     } catch (error: any) {
       console.log(error);
@@ -410,25 +442,36 @@ class AuthController implements IAuthController {
     }
   }
 
-
-  async saveLocation(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async saveLocation(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
-      const parseResult = saveLocationSchema.safeParse(req.body)
-      if(!parseResult.success){
-        res.status(400).json({
-          message:"Invalid location data",
-          errors:parseResult.error.flatten().fieldErrors
-        })
-        return
-      }
-      const {location:{lat,lng},userId}=parseResult.data
-      const response = await this._authService.saveLocation(lat,lng,userId);
+      const {
+        location: { lat, lng },
+        userId,
+      } =req.body;
+      const response = await this._authService.saveLocation(lat, lng, userId);
       res.status(StatusCodes.OK).json("Location saved successfully");
     } catch (error: any) {
       console.log(error);
       res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
     }
-
+  }
+  async getUserLocation(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { userId } = req.params;
+      const response = await this._authService.getUserLocation(userId);
+      res.status(StatusCodes.OK).json(response);
+    } catch (error: any) {
+      console.log(error);
+      res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
+    }
   }
 }
 

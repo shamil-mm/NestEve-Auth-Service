@@ -21,4 +21,5 @@ export interface IAuthController {
   getProfileImage(req:Request,res:Response,next:NextFunction):Promise<void>
   deleteProfileImage(req:Request,res:Response,next:NextFunction):Promise<void>
   saveLocation(req:Request,res:Response,next:NextFunction):Promise<void>
+  getUserLocation(req:Request,res:Response,next:NextFunction):Promise<void>
 }

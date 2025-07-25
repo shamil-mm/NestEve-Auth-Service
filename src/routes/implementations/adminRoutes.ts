@@ -25,6 +25,11 @@ class AdminRoutes implements IAdminRoutes {
       `${this.path}/admin-block-user`,
       this._adminController.blockUser.bind(this._adminController)
     );
+    this.router.get(
+      `${this.path}/admin-dashboard-stats`,
+      this._adminController.getAdminDashboardStats.bind(this._adminController)
+    )
+    
   }
 }
 

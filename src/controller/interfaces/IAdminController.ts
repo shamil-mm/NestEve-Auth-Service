@@ -4,4 +4,5 @@ export interface IAdminController {
   getUser(req: Request, res: Response, next: NextFunction): Promise<void>;
   getOrganizers(req: Request, res: Response, next: NextFunction): Promise<void>;
   blockUser(req: Request, res: Response, next: NextFunction): Promise<void>;
+  getAdminDashboardStats(req: Request, res: Response, next: NextFunction): Promise<void>;
 }

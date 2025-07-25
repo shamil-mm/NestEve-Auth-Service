@@ -1,7 +1,9 @@
 import { IUser } from "../../model/interfaces/userInterface";
+import { IUserQueryParams } from "../../controller/implementaions/adminController";
 
 export interface IAdminService {
-  getUsers(): Promise<IUser[]>;
-  getOrganizers(): Promise<IUser[]>;
+  getUsers(data:IUserQueryParams): Promise<{users:IUser[],totalPages:number}>;
+  getOrganizers(data:IUserQueryParams): Promise<{organizers:IUser[],totalPages:number}>;
   blockUser(email: string, is_block: boolean): Promise<any>;
+  getAdminDashboardStats():Promise<{totalUsers:number}>
 }

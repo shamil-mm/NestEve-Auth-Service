@@ -7,4 +7,5 @@ export interface IUserRepository {
   findById(id: string): Promise<IUser | null>;
   delete(id: string): Promise<void>;
   updateName(userId:string,name:string):Promise<void>
+  getUserLocation(userId:string):Promise<{lat?:number,lng?:number}>;
 }

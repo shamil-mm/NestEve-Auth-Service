@@ -528,6 +528,17 @@ class AuthService implements IAuthService {
       return {  message: error.message };
     }
   }
+  async getUserLocation(userId: string): Promise<{ lat?: number; lng?: number; message:string}> {
+     try {
+    
+     const res=  await this._authRepository.getUserLocation(userId);
+      return {message:"successfully get the user location",lat:res.lat,lng:res.lng}
+      
+    } catch (error:any) {
+       console.log(error);
+      return {  message: error.message };
+    }
+  }
 }
 
 export default AuthService;

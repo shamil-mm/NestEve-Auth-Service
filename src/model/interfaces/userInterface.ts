@@ -1,4 +1,4 @@
-import { Document } from "mongoose";
+import { Document, Types } from "mongoose";
 
 export interface IUser extends Document {
   name: string;
@@ -13,5 +13,8 @@ export interface IUser extends Document {
     type:"Point";
     coordinates:[number,number]
   }
- 
+}
+
+export interface IUserDocument extends IUser,Document {
+_id:Types.ObjectId
 }

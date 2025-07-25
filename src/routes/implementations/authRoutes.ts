@@ -101,6 +101,10 @@ class AuthRoutes implements IAuthRoutes {
       `${this.path}/location`,
       this._authController.saveLocation.bind(this._authController)
     );
+    this.router.get(
+      `${this.path}/get-user-location/:userId`,
+      this._authController.getUserLocation.bind(this._authController)
+    );
   }
 }
 
