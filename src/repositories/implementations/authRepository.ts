@@ -41,6 +41,15 @@ class AuthRepository implements IUserRepository {
       {name}
     )
   }
+  async getUserLocation(userId: string): Promise<{ lat?: number; lng?: number; }> {
+    const user=await User.findById(userId).select('location').lean()
+    if (!user || !user.location || !user.location.coordinates?.length) {
+    return { lat: 0, lng: 0 };
+  }
+
+  const [lng, lat] = user.location.coordinates;
+  return { lat, lng };
+  }
 }
 
 export default AuthRepository;

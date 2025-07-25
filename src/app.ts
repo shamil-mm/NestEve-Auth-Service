@@ -47,8 +47,7 @@ app.use(errorHandlerMiddleware);
 (async()=>{
   try {
     await kafkaWrapper.connect()
-    connetDB();
-    
+    connetDB(); 
   } catch (error) {
     console.log('error found in IIFE in app.ts',error)
   }

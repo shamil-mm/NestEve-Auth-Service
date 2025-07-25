@@ -12,6 +12,9 @@ class AdminRepository implements IAdminRepository {
   async update(email: string, item: Partial<IUser>) {
     return await User.findOneAndUpdate({ email }, item, { new: true });
   }
+  async findAllUserCount(): Promise<number> {
+    return await User.find({}).countDocuments();
+  }
 }
 
 export default AdminRepository;

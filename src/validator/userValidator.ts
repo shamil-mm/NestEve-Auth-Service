@@ -4,7 +4,6 @@ const emailSchema = z.string().email("Please enter a valid email address.");
 const passwordSchema = z
   .string()
   .min(6, '"Password must be at least 6 characters long"');
-//    .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character")
 const nameSchema = z
   .string()
   .min(3, "Name must be at least 3 characters long")
