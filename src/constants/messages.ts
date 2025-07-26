@@ -1,3 +1,5 @@
+
+
 export const Messages = {
     REGISTER_SUCCESS: 'User registered successfully',
     LOGIN_SUCCESS: 'Login successful',
@@ -11,6 +13,7 @@ export const Messages = {
 
     USER_ALREADY_EXISTS: "User already exists",
     EMAIL_SENDING:'Email sent to the user',
+    INVALID_ID:'Invalid ID format',
     EMAIL_VERIFICATION_FAILURE:"Failed to send verification email",
     EMAIL_VERIFICATION_ERROR:"Failed to send verification email",
     PASSWORD_MISMATCH:'Password not Matching',
@@ -39,6 +42,7 @@ export const Messages = {
     IMAGE_URL_SUCCESS:"ImageUrl stored successfully",
     IMAGE_URL_FAILURE:"ImageUrl  failed to store",
     IMAGE_STORE_SUCCESS:"Image successfully stored",
-    IMAGE_DELETE_SUCESS:"Profile-image successfully deleted"
+    IMAGE_DELETE_SUCESS:"Profile-image successfully deleted",
+    INTERNAL_ERROR:'Internal Server Error'
   };
   

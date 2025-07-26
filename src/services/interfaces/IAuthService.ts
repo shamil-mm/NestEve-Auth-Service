@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { IUser } from "../../model/interfaces/userInterface";
+import { RegisterUserType } from "../../dto/RequestDTO/registerUser.dto";
 
 export interface IapiResponse {
   status: boolean;
@@ -8,13 +9,7 @@ export interface IapiResponse {
 }
 
 export interface IAuthService {
-  registerUser(
-    name: string,
-    email: string,
-    password: string,
-    role: "organizer" | "user" | "admin",
-    organizationName?: string | null
-  ): Promise<IapiResponse>;
+  registerUser(data:RegisterUserType): Promise<IapiResponse>;
   loginUser(
     email: string,
     password: string,

@@ -32,6 +32,7 @@ import { UserCreateProducer } from "../Kafka/kafkaIndex";
 import kafkaWrapper from "../Kafka/kafkaWrapper";
 import { Producer } from "kafkajs";
 import { StatusCodes } from "../../constants/statusCode";
+import { RegisterUserType } from "../../dto/RequestDTO/registerUser.dto";
 
 @injectable()
 class AuthService implements IAuthService {
@@ -49,15 +50,12 @@ class AuthService implements IAuthService {
     this._s3Service = s3Service;
   }
 
-  async registerUser(
-    name: string,
-    email: string,
-    password: string,
-    role: "organizer" | "user" | "admin",
-    organizationName?: string
-  ): Promise<IapiResponse> {
-    try {
+  async registerUser(data: RegisterUserType): Promise<IapiResponse> {
+    
+      const { name, email, password, role, organizationName } = data;
+
       const existingUser = await this._authRepository.findByEmail(email);
+
       if (existingUser) throw new AppError(Messages.USER_ALREADY_EXISTS, 409);
 
       const hashedPassword = await this._hashPassword(password);
@@ -74,16 +72,13 @@ class AuthService implements IAuthService {
           email,
           Messages.EMAIL_VERIFICATION_SUBJECT
         );
-        return { status: false, message: Messages.EMAIL_SENDING };
       } catch (error) {
-        throw new AppError(Messages.EMAIL_VERIFICATION_FAILURE, StatusCodes.INTERNAL_SERVER_ERROR);
+        throw new AppError(
+          Messages.EMAIL_VERIFICATION_FAILURE,
+          StatusCodes.INTERNAL_SERVER_ERROR
+        );
       }
-    } catch (error: any) {
-      if (error instanceof AppError) {
-        throw error;
-      }
-      throw new AppError(Messages.EMAIL_VERIFICATION_ERROR, StatusCodes.INTERNAL_SERVER_ERROR);
-    }
+       return { status:true, message: Messages.EMAIL_SENDING };
   }
 
   async loginUser(
@@ -98,9 +93,9 @@ class AuthService implements IAuthService {
       const isMatch = await this._comparePassword(password, user.password);
       if (!isMatch) throw new unauthorizedError(Messages.PASSWORD_MISMATCH);
 
-      if (user.role !== role) throw new unauthorizedError(Messages.ROLE_MISMATCH);
-      if (user.is_block === true)
-        throw new unauthorizedError(Messages.BlOCKED);
+      if (user.role !== role)
+        throw new unauthorizedError(Messages.ROLE_MISMATCH);
+      if (user.is_block === true) throw new unauthorizedError(Messages.BlOCKED);
 
       const accessToken = signToken(user);
       const refreshToken = refreshTokenCreation(user);
@@ -122,7 +117,10 @@ class AuthService implements IAuthService {
       if (error instanceof AppError) {
         throw error;
       }
-      throw new AppError(Messages.LOGIN_FAILURE, StatusCodes.INTERNAL_SERVER_ERROR);
+      throw new AppError(
+        Messages.LOGIN_FAILURE,
+        StatusCodes.INTERNAL_SERVER_ERROR
+      );
     }
   }
   async loginAdmin(
@@ -137,7 +135,8 @@ class AuthService implements IAuthService {
       const isMatch = await this._comparePassword(password, user.password);
       if (!isMatch) throw new unauthorizedError(Messages.PASSWORD_MISMATCH);
 
-      if (user.role !== role) throw new unauthorizedError(Messages.ROLE_MISMATCH);
+      if (user.role !== role)
+        throw new unauthorizedError(Messages.ROLE_MISMATCH);
 
       const accessToken = signToken(user);
       const refreshToken = refreshTokenCreation(user);
@@ -152,7 +151,10 @@ class AuthService implements IAuthService {
       if (error instanceof AppError) {
         throw error;
       }
-      throw new AppError(Messages.LOGIN_FAILURE, StatusCodes.INTERNAL_SERVER_ERROR);
+      throw new AppError(
+        Messages.LOGIN_FAILURE,
+        StatusCodes.INTERNAL_SERVER_ERROR
+      );
     }
   }
 
@@ -201,7 +203,7 @@ class AuthService implements IAuthService {
         name: string;
         hashedPassword: string;
       };
-     
+
       const existingUser = await this._authRepository.findByEmail(
         userData.email
       );
@@ -220,7 +222,7 @@ class AuthService implements IAuthService {
           role: userData.role,
           organizationName: userData.organizationName,
         });
-        console.log('user',user)
+        console.log("user", user);
 
         if (user) {
           try {
@@ -291,7 +293,7 @@ class AuthService implements IAuthService {
       console.log("from redis storage", tempData);
       const hashedPassword = await this._hashPassword(tempData!.password);
       await this._authRepository.update(email, { password: hashedPassword });
-      return { message: Messages.NEW_PASSWORD_SUCCESS};
+      return { message: Messages.NEW_PASSWORD_SUCCESS };
     } catch (error: any) {
       console.error("Error in forgot password:", error.message);
       return { message: Messages.TOKEN_ERROR };
@@ -336,7 +338,7 @@ class AuthService implements IAuthService {
 
       return {
         status: true,
-        message:Messages.GOOGLE_SIGN_SUCCESS ,
+        message: Messages.GOOGLE_SIGN_SUCCESS,
         data: {
           email: userExists.email,
           role: userExists.role,
@@ -348,7 +350,10 @@ class AuthService implements IAuthService {
       if (error instanceof AppError) {
         throw error;
       }
-      throw new AppError(Messages.GOOGLE_SIGN_FAILURE, StatusCodes.INTERNAL_SERVER_ERROR);
+      throw new AppError(
+        Messages.GOOGLE_SIGN_FAILURE,
+        StatusCodes.INTERNAL_SERVER_ERROR
+      );
     }
   }
 
@@ -363,18 +368,18 @@ class AuthService implements IAuthService {
         email: currentUserData?.email,
         avatarUrl: currentUserData?.avatarUrl,
         role: currentUserData?.role,
-        location:currentUserData?.location
+        location: currentUserData?.location,
       },
     };
   }
-  
+
   async updateName(
     userId: string,
     name: string
   ): Promise<{ status: boolean; message: string }> {
     try {
       const res = await this._authRepository.updateName(userId, name);
-      return { status: true, message:Messages.NAME_UPDATE_SUCCESS  };
+      return { status: true, message: Messages.NAME_UPDATE_SUCCESS };
     } catch (error) {
       return { status: false, message: Messages.NAME_UPDATE_FAILURE };
     }
@@ -440,7 +445,7 @@ class AuthService implements IAuthService {
       };
       // await s3Client.send(new DeleteObjectCommand(params))
 
-      return { status: true, message:Messages.IMAGE_URL_SUCCESS };
+      return { status: true, message: Messages.IMAGE_URL_SUCCESS };
     } catch (error: any) {
       return { status: false, message: error.message };
     }
@@ -476,7 +481,7 @@ class AuthService implements IAuthService {
 
       return {
         status: true,
-        message:Messages.IMAGE_STORE_SUCCESS ,
+        message: Messages.IMAGE_STORE_SUCCESS,
         url: imageUrl as string,
       };
     } catch (error: any) {
@@ -517,26 +522,35 @@ class AuthService implements IAuthService {
     }
   }
 
-  async saveLocation(lat: number, lng: number,userId:string): Promise<{ message: string; }> {
+  async saveLocation(
+    lat: number,
+    lng: number,
+    userId: string
+  ): Promise<{ message: string }> {
     try {
-      console.log(lat,lng,userId)
-       await this._authRepository.updateById(userId, { location:{type:'Point',coordinates:[lng,lat]} });
-      return {message:'Location updated successfully'}
-      
-    } catch (error:any) {
-       console.log(error);
-      return {  message: error.message };
+      console.log(lat, lng, userId);
+      await this._authRepository.updateById(userId, {
+        location: { type: "Point", coordinates: [lng, lat] },
+      });
+      return { message: "Location updated successfully" };
+    } catch (error: any) {
+      console.log(error);
+      return { message: error.message };
     }
   }
-  async getUserLocation(userId: string): Promise<{ lat?: number; lng?: number; message:string}> {
-     try {
-    
-     const res=  await this._authRepository.getUserLocation(userId);
-      return {message:"successfully get the user location",lat:res.lat,lng:res.lng}
-      
-    } catch (error:any) {
-       console.log(error);
-      return {  message: error.message };
+  async getUserLocation(
+    userId: string
+  ): Promise<{ lat?: number; lng?: number; message: string }> {
+    try {
+      const res = await this._authRepository.getUserLocation(userId);
+      return {
+        message: "successfully get the user location",
+        lat: res.lat,
+        lng: res.lng,
+      };
+    } catch (error: any) {
+      console.log(error);
+      return { message: error.message };
     }
   }
 }

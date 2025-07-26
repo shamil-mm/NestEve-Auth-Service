@@ -8,4 +8,4 @@ export const RegisterUserDTO = z.object({
   organizationName:z.string().optional()
 });
 
-export type RegisterUserInput=z.infer<typeof RegisterUserDTO>
+export type RegisterUserType=z.infer<typeof RegisterUserDTO>

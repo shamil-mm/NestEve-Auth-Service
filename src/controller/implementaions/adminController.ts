@@ -2,8 +2,8 @@ import { Request, Response, NextFunction } from "express";
 import { IAdminController } from "../interfaces/IAdminController";
 import { inject, injectable } from "tsyringe";
 import { IAdminService } from "../../services/interfaces/IAdminService";
-import { blockUserSchema } from "../../validator/userValidator";
-
+import { GetuserResponseDTO } from "../../dto/ResponseDTO/getUserResponse.dto";
+import { BlockUserRequestDTO } from "../../dto/RequestDTO/blockUserRequest.dto";
 
 export interface IUserQueryParams {
   search?: string;
@@ -38,7 +38,16 @@ class AdminController implements IAdminController {
 
 
       const users = await this._adminService.getUsers({search,sortField ,sortDirection,filterBy,page:currentPage,limit:itemsPerPage} ) 
-      res.status(200).json({ users });
+     
+      const mappedUsers:GetuserResponseDTO[]=users.users.map((user:any)=>({
+        _id:user._id.toString(),
+        name:user.name,
+        email:user.email,
+        createdAt:user.createdAt.toISOString(),
+        status:user.status,
+        is_block:user.is_block
+      }))
+      res.status(200).json({users:{ users:mappedUsers,totalPages:users.totalPages}});
     } catch (error) {
       console.log(error);
     }
@@ -75,10 +84,16 @@ class AdminController implements IAdminController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const validatedbody = blockUserSchema.parse(req.body);
+      const result=BlockUserRequestDTO.safeParse(req.body)
+      if (!result.success) {
+         res.status(400).json({ error: result.error.errors });
+         return
+      }
+
+      const {email,is_block}=result.data
       const response = await this._adminService.blockUser(
-        validatedbody.email,
-        validatedbody.is_block
+       email,
+       is_block
       );
       res.status(200).json({ status: true, response });
     } catch (error) {
@@ -93,7 +108,8 @@ class AdminController implements IAdminController {
   ): Promise<void> {
     try {
       const totalUserCount = await this._adminService.getAdminDashboardStats();
-      res.status(200).json( totalUserCount );
+      console.log('total user count',totalUserCount)
+      res.status(200).json( totalUserCount )
     } catch (error) {
       console.log(error);
     }
