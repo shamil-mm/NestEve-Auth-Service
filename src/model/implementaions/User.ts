@@ -1,8 +1,8 @@
 import mongoose, { Schema } from "mongoose";
 import { IUser } from "../interfaces/userInterface";
-import { boolean } from "zod";
+import { IUserDocument } from "../interfaces/userInterface";
 
-const UserSchema: Schema<IUser> = new Schema(
+const UserSchema: Schema<IUserDocument> = new Schema(
   {
     
     name: { type: String, required: true },
@@ -37,5 +37,5 @@ const UserSchema: Schema<IUser> = new Schema(
 );
 
 UserSchema.index({location:"2dsphere"})
-const User = mongoose.model<IUser>("User", UserSchema);
+const User = mongoose.model<IUserDocument>("User", UserSchema);
 export default User;

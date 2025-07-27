@@ -1,10 +1,10 @@
 import mongoose, { FilterQuery } from "mongoose";
 import User from "../../model/implementaions/User";
-import { IUser } from "../../model/interfaces/userInterface";
+import { IUser, IUserDocument } from "../../model/interfaces/userInterface";
 import { IUserRepository } from "../interfaces/IUserRepository";
 
 class AuthRepository implements IUserRepository {
-  async create(user: Partial<IUser>): Promise<IUser> {
+  async create(user: Partial<IUser>): Promise<IUserDocument> {
     try {
       const newUser = new User(user);
       const res= await newUser.save();
@@ -24,7 +24,7 @@ class AuthRepository implements IUserRepository {
     return await User.findByIdAndUpdate ({ _id:id }, item, { new: true });
   }
 
-  async findByEmail(email: string): Promise<IUser | null> {
+  async findByEmail(email: string): Promise<IUserDocument | null> {
     return await User.findOne({ email });
   }
 

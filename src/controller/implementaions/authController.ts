@@ -3,8 +3,8 @@ import { inject, injectable } from "tsyringe";
 import { IAuthService } from "../../services/interfaces/IAuthService";
 import { IAuthController } from "../interfaces/IAuthController";
 import { z, ZodError } from "zod";
-import { AppError, ValidationError } from "../../error/AppError";
-import config from "../../config/config";
+import { AppError,unauthorizedError,ValidationError} from "../../error/AppError";
+
 import { StatusCodes } from "../../constants/statusCode";
 import { RegisterUserDTO } from "../../dto/RequestDTO/registerUser.dto";
 import { LoginRequestDTO } from "../../dto/RequestDTO/loginRequest.dto";
@@ -17,8 +17,8 @@ import { Types } from "mongoose";
 import { Messages } from "../../constants/messages";
 import { UpdateNameDTO } from "../../dto/RequestDTO/updateNameRequest.dto";
 import { UpdatePasswordDTO } from "../../dto/RequestDTO/updatePasswordRequest.dto";
-import { setAuthCookies } from "../../utils/controller helper functions/setAuthCookies";
 import { validateObjectId } from "../../utils/controller helper functions/validateObjectId";
+import { ACCESS_TOKEN_COOKIE_OPTIONS, CLEAR_TOKEN_COOKIE_OPTIONS, REFRESH_TOKEN_COOKIE_OPTIONS,} from "../../constants/cookieOptions";
 
 @injectable()
 class AuthController implements IAuthController {
@@ -49,51 +49,31 @@ class AuthController implements IAuthController {
         .status(StatusCodes.CREATED)
         .json({ status: true, message: result.message, data: result.data });
     } catch (error) {
-      this._handleError(error,next)
+      this._handleError(error, next);
     }
   }
 
-  
   async login(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const validatedBody = LoginRequestDTO.parse(req.body);
-      const result = await this._authService.loginUser(
-        validatedBody.email,
-        validatedBody.password,
-        validatedBody.role
+      const data = LoginRequestDTO.parse(req.body);
+
+      const result = await this._authService.loginUser(data);
+
+      res.cookie(
+        "accessToken",
+        result.tokens.accessToken,
+        ACCESS_TOKEN_COOKIE_OPTIONS
       );
-
-      res.cookie("accessToken", result.tokens.accessToken, {
-        httpOnly: true,
-        secure: config.NODE_ENV !== "development",
-        sameSite: "none",
-        maxAge: 15 * 60 * 1000,
-      });
-
-      res.cookie("refreshToken", result.tokens.refreshToken, {
-        httpOnly: true,
-        secure: config.NODE_ENV !== "development",
-        sameSite: "none",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      });
-
+      res.cookie(
+        "refreshToken",
+        result.tokens.refreshToken,
+        REFRESH_TOKEN_COOKIE_OPTIONS
+      );
       console.log("login response data", result);
+
       res.status(StatusCodes.OK).json(result);
     } catch (error) {
-      const err = error as Error;
-      if (err instanceof z.ZodError) {
-        console.error("Validation failed:", err.errors);
-        next(new ValidationError("validation failed"));
-      } else if (error instanceof AppError) {
-        next(error);
-      } else {
-        next(
-          new AppError(
-            "internal Server Error",
-            StatusCodes.INTERNAL_SERVER_ERROR
-          )
-        );
-      }
+      this._handleError(error, next);
     }
   }
 
@@ -103,121 +83,78 @@ class AuthController implements IAuthController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const validatedBody = LoginRequestDTO.parse(req.body);
-      const result = await this._authService.loginUser(
-        validatedBody.email,
-        validatedBody.password,
-        validatedBody.role
+      const data = LoginRequestDTO.parse(req.body);
+      const result = await this._authService.loginUser(data);
+
+      res.cookie(
+        "admin_accessToken",
+        result.tokens.accessToken,
+        ACCESS_TOKEN_COOKIE_OPTIONS
+      );
+      res.cookie(
+        "admin_refreshToken",
+        result.tokens.refreshToken,
+        REFRESH_TOKEN_COOKIE_OPTIONS
       );
 
-      res.cookie("admin_accessToken", result.tokens.accessToken, {
-        httpOnly: true,
-        secure: config.NODE_ENV !== "development",
-        sameSite: "none",
-        maxAge: 15 * 60 * 1000,
-      });
-
-      res.cookie("admin_refreshToken", result.tokens.refreshToken, {
-        httpOnly: true,
-        secure: config.NODE_ENV !== "development",
-        sameSite: "none",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      });
       res.status(StatusCodes.OK).json(result);
     } catch (error) {
-      const err = error as Error;
-      if (err instanceof z.ZodError) {
-        console.error("Validation failed:", err.errors);
-        next(new ValidationError("validation failed"));
-      } else if (error instanceof AppError) {
-        next(error);
-      } else {
-        next(
-          new AppError(
-            "internal Server Error",
-            StatusCodes.INTERNAL_SERVER_ERROR
-          )
-        );
+      this._handleError(error, next);
+    }
+  }
+
+  async logout(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      res.clearCookie("accessToken", CLEAR_TOKEN_COOKIE_OPTIONS);
+      res.clearCookie("refreshToken", CLEAR_TOKEN_COOKIE_OPTIONS);
+      res.status(StatusCodes.OK).json({ success: Messages.LOGOUT_SUCCESS });
+    } catch (error) {
+      this._handleError(error, next);
+    }
+  }
+
+  async adminLogout(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      res.clearCookie("admin_accessToken", CLEAR_TOKEN_COOKIE_OPTIONS);
+      res.clearCookie("admin_refreshToken", CLEAR_TOKEN_COOKIE_OPTIONS);
+      res.status(StatusCodes.OK).json({ success: Messages.LOGOUT_SUCCESS });
+    } catch (error) {
+      this._handleError(error, next);
+    }
+  }
+
+  async refreshToken(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { refreshToken } = RefreshTokenRequestDTO.parse(req.body);
+
+      const newToken = await this._authService.refreshAccessToken(refreshToken);
+      if (!newToken) {
+        throw new unauthorizedError(Messages.TOKEN_FAILURE);
       }
-    }
-  }
 
-  async logout(req: Request, res: Response): Promise<void> {
-    try {
-      res.clearCookie("accessToken", {
-        httpOnly: true,
-        secure: config.NODE_ENV !== "development",
-        sameSite: "none",
-        maxAge: 0,
-      });
-      res.clearCookie("refreshToken", {
-        httpOnly: true,
-        secure: config.NODE_ENV !== "development",
-        sameSite: "none",
-        maxAge: 0,
-      });
-      res.status(StatusCodes.OK).json({ success: "User Logout Success" });
-    } catch (error) {
-      const err = error as Error;
-      res.status(StatusCodes.UNAUTHORIZED).json({ error: err.message });
-    }
-  }
-
-  async adminLogout(req: Request, res: Response): Promise<void> {
-    try {
-      res.clearCookie("admin_accessToken", {
-        httpOnly: true,
-        secure: config.NODE_ENV !== "development",
-        sameSite: "none",
-        maxAge: 0,
-      });
-      res.clearCookie("admin_refreshToken", {
-        httpOnly: true,
-        secure: config.NODE_ENV !== "development",
-        sameSite: "none",
-        maxAge: 0,
-      });
-      res.status(StatusCodes.OK).json({ success: "User Logout Success" });
-    } catch (error) {
-      const err = error as Error;
-      res.status(StatusCodes.UNAUTHORIZED).json({ error: err.message });
-    }
-  }
-
-  async refreshToken(req: Request, res: Response): Promise<void> {
-    try {
-      const validatedBody = RefreshTokenRequestDTO.parse(req.body);
-      const newToken = await this._authService.refreshAccessToken(
-        validatedBody.refreshToken
-      );
       if (newToken) {
         res.status(StatusCodes.OK).json({ token: newToken });
       } else {
         res.status(StatusCodes.FORBIDDEN).json({ token: newToken });
       }
     } catch (error) {
-      const err = error as Error;
-      if (
-        err.message === "Invalid refresh token" ||
-        err.message === "Refresh token expired"
-      ) {
-        res.status(StatusCodes.UNAUTHORIZED).json({ error: err.message });
-      } else if (err instanceof z.ZodError) {
-        console.error("Validation failed:", err.errors);
-      } else {
-        res
-          .status(StatusCodes.INTERNAL_SERVER_ERROR)
-          .json({ error: "Internal server error.", err });
-      }
+      this._handleError(error, next);
     }
   }
 
   async verifyAccount(req: Request, res: Response): Promise<void> {
     try {
-      const validatedBody = VerifyAccountRequestDTO.parse(req.body);
-      const result = await this._authService.verifyAccount(
-        validatedBody.token as string
-      );
+      const { token } = VerifyAccountRequestDTO.parse(req.body);
+      const result = await this._authService.verifyAccount(token as string);
+
       res.status(StatusCodes.CREATED).json(result);
     } catch (error: any) {
       res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
@@ -229,8 +166,9 @@ class AuthController implements IAuthController {
       const validatedBody = ForgotPasswordRequestDTO.parse(req.body);
       const success = await this._authService.forgotPassword(validatedBody);
       res.status(StatusCodes.CREATED).json(success);
-    } catch (error: any) {
-      res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
+    } catch (error) {
+      const err = error as Error;
+      res.status(StatusCodes.BAD_REQUEST).json({ message: err.message });
     }
   }
   async verifyForgotPassword(req: Request, res: Response): Promise<void> {
@@ -241,7 +179,8 @@ class AuthController implements IAuthController {
       );
       res.status(StatusCodes.OK).json(result);
     } catch (error: any) {
-      res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
+      const err = error as Error;
+      res.status(StatusCodes.BAD_REQUEST).json({ message: err.message });
     }
   }
 
@@ -255,40 +194,29 @@ class AuthController implements IAuthController {
       const result = await this._authService.googleAuth(validatedBody);
 
       if (result.status === true) {
-        res.cookie("accessToken", result.tokens.accessToken, {
-          httpOnly: true,
-          secure: config.NODE_ENV !== "development",
-          sameSite: "none",
-          maxAge: 15 * 60 * 1000,
-        });
+        res.cookie(
+          "accessToken",
+          result.tokens.accessToken,
+          ACCESS_TOKEN_COOKIE_OPTIONS
+        );
 
-        res.cookie("refreshToken", result.tokens.refreshToken, {
-          httpOnly: true,
-          secure: config.NODE_ENV !== "development",
-          sameSite: "none",
-          maxAge: 7 * 24 * 60 * 60 * 1000,
-        });
+        res.cookie(
+          "refreshToken",
+          result.tokens.refreshToken,
+          REFRESH_TOKEN_COOKIE_OPTIONS
+        );
         res.status(StatusCodes.OK).json(result);
       }
     } catch (error) {
-      const err = error as Error;
-      if (err instanceof z.ZodError) {
-        console.error("Validation failed:", err.errors);
-        next(new ValidationError("validation failed"));
-      } else if (error instanceof AppError) {
-        next(error);
-      } else {
-        next(
-          new AppError(
-            "internal Server Error",
-            StatusCodes.INTERNAL_SERVER_ERROR
-          )
-        );
-      }
+      this._handleError(error, next);
     }
   }
 
-  async currentUser(req: Request, res: Response): Promise<void> {
+  async currentUser(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
       const id = req.params.id;
       if (!Types.ObjectId.isValid(id)) {
@@ -299,8 +227,8 @@ class AuthController implements IAuthController {
 
       const result = await this._authService.currectUser(id);
       res.status(StatusCodes.OK).json(result);
-    } catch (error: any) {
-      res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
+    } catch (error) {
+      this._handleError(error, next);
     }
   }
 
@@ -314,8 +242,8 @@ class AuthController implements IAuthController {
       const { userId, name } = validatedBody;
       const result = await this._authService.updateName(userId, name);
       res.status(StatusCodes.OK).json(result);
-    } catch (error: any) {
-      res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
+    } catch (error) {
+      this._handleError(error, next);
     }
   }
 
@@ -336,8 +264,8 @@ class AuthController implements IAuthController {
         newpassword
       );
       res.status(StatusCodes.OK).json(result);
-    } catch (error: any) {
-      res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
+    } catch (error) {
+      this._handleError(error, next);
     }
   }
 
@@ -349,12 +277,8 @@ class AuthController implements IAuthController {
     try {
       const { fileName, fileType } = req.query;
 
-      if (!fileName || !fileType) {
-        res
-          .status(StatusCodes.BAD_REQUEST)
-          .json({ error: "Missing fileName or fileType" });
-        return;
-      }
+      if (!fileName || !fileType)
+        throw new AppError(Messages.FILE_MISSING, StatusCodes.BAD_REQUEST);
 
       const url = await this._authService.generatePresignedUrl(
         fileName as string,
@@ -362,8 +286,8 @@ class AuthController implements IAuthController {
       );
 
       res.status(StatusCodes.OK).json({ url });
-    } catch (error: any) {
-      res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
+    } catch (error) {
+      this._handleError(error, next);
     }
   }
   async setImageUrl(
@@ -373,11 +297,10 @@ class AuthController implements IAuthController {
   ): Promise<void> {
     try {
       const { params, id } = req.body;
-
       const result = await this._authService.setImageUrl(params, id);
       res.status(StatusCodes.OK).json(result);
-    } catch (error: any) {
-      res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
+    } catch (error) {
+      this._handleError(error, next);
     }
   }
   async deleteImageUrl(
@@ -390,8 +313,8 @@ class AuthController implements IAuthController {
 
       const result = await this._authService.deleteImageUrl(imageUrl);
       res.status(StatusCodes.OK).json(result);
-    } catch (error: any) {
-      res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
+    } catch (error) {
+      this._handleError(error, next);
     }
   }
   async uploadImageToServer(
@@ -401,14 +324,13 @@ class AuthController implements IAuthController {
   ): Promise<void> {
     try {
       if (!req.file) {
-        throw new AppError("No file uploaded", StatusCodes.UNAUTHORIZED);
+        throw new AppError(
+          Messages.FILE_UPLOAD_FAILED,
+          StatusCodes.UNAUTHORIZED
+        );
       }
       const { userId, oldImageUrl } = req.body;
-      if (!Types.ObjectId.isValid(userId)) {
-        res
-          .status(StatusCodes.BAD_REQUEST)
-          .json({ message: Messages.INVALID_ID });
-      }
+      validateObjectId(userId);
 
       const response = await this._authService.uploadImageToServer(
         req.file,
@@ -416,9 +338,8 @@ class AuthController implements IAuthController {
         oldImageUrl
       );
       res.status(StatusCodes.OK).json(response);
-    } catch (error: any) {
-      console.log(error);
-      res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
+    } catch (error) {
+      this._handleError(error, next);
     }
   }
   async getProfileImage(
@@ -432,13 +353,13 @@ class AuthController implements IAuthController {
         const response = await this._authService.getProfileImage(
           avatarUrl as string
         );
-
         res.status(StatusCodes.OK).json(response);
+      }else{
+        res.status(StatusCodes.OK).json({ message: Messages.FILE_UPLOAD_FAILED });
       }
-      res.status(StatusCodes.OK).json({ message: "profile not added" });
-    } catch (error: any) {
-      console.log(error);
-      res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
+    } catch (error) {
+      console.log(error)
+      this._handleError(error, next);
     }
   }
   async deleteProfileImage(
@@ -448,19 +369,15 @@ class AuthController implements IAuthController {
   ): Promise<void> {
     try {
       const { id, avatarUrl } = req.body;
-      if (!Types.ObjectId.isValid(id)) {
-        res
-          .status(StatusCodes.BAD_REQUEST)
-          .json({ message: Messages.INVALID_ID });
-      }
+      validateObjectId(id)
+     
       const response = await this._authService.deleteProfileImage(
         id,
         avatarUrl
       );
       res.status(StatusCodes.OK).json(response);
-    } catch (error: any) {
-      console.log(error);
-      res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
+    } catch (error) {
+      this._handleError(error, next);
     }
   }
 
@@ -474,16 +391,11 @@ class AuthController implements IAuthController {
         location: { lat, lng },
         userId,
       } = req.body;
-      if (!Types.ObjectId.isValid(userId)) {
-        res
-          .status(StatusCodes.BAD_REQUEST)
-          .json({ message: Messages.INVALID_ID });
-      }
+     validateObjectId(userId)
       const response = await this._authService.saveLocation(lat, lng, userId);
-      res.status(StatusCodes.OK).json("Location saved successfully");
-    } catch (error: any) {
-      console.log(error);
-      res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
+      res.status(StatusCodes.OK).json(Messages.LOCATION_UPLOADED);
+    } catch (error) {
+      this._handleError(error, next);
     }
   }
   async getUserLocation(
@@ -493,16 +405,11 @@ class AuthController implements IAuthController {
   ): Promise<void> {
     try {
       const { userId } = req.params;
-      if (!Types.ObjectId.isValid(userId)) {
-        res
-          .status(StatusCodes.BAD_REQUEST)
-          .json({ message: Messages.INVALID_ID });
-      }
+      validateObjectId(userId)
       const response = await this._authService.getUserLocation(userId);
       res.status(StatusCodes.OK).json(response);
-    } catch (error: any) {
-      console.log(error);
-      res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
+    } catch (error) {
+      this._handleError(error, next);
     }
   }
 }

@@ -1,10 +1,6 @@
 import bcrypt from "bcrypt";
-import { IUser } from "../../model/interfaces/userInterface";
-import {
-  Decoded,
-  IAuthService,
-  IapiResponse,
-} from "../interfaces/IAuthService";
+import { IUser, IUserDocument } from "../../model/interfaces/userInterface";
+import { Decoded, IAuthService } from "../interfaces/IAuthService";
 import { IUserRepository } from "../../repositories/interfaces/IUserRepository";
 import {
   refreshTokenCreation,
@@ -33,6 +29,14 @@ import kafkaWrapper from "../Kafka/kafkaWrapper";
 import { Producer } from "kafkajs";
 import { StatusCodes } from "../../constants/statusCode";
 import { RegisterUserType } from "../../dto/RequestDTO/registerUser.dto";
+import { LoginRequestDTOType } from "../../dto/RequestDTO/loginRequest.dto";
+import {
+  LoginDataDTO,
+  LoginResponse,
+} from "../../dto/ResponseDTO/loginResponse.dto";
+import { GoogleAuthRequestDTOType } from "../../dto/RequestDTO/googleAuthRequest.dto";
+import { RegisterResponse } from "../../dto/ResponseDTO/registerUserResponse.dto";
+import { refreshAccessTokenResponse } from "../../dto/ResponseDTO/refreshAccessTokenResponse.dto";
 
 @injectable()
 class AuthService implements IAuthService {
@@ -50,150 +54,125 @@ class AuthService implements IAuthService {
     this._s3Service = s3Service;
   }
 
-  async registerUser(data: RegisterUserType): Promise<IapiResponse> {
-    
-      const { name, email, password, role, organizationName } = data;
+  async registerUser(data: RegisterUserType): Promise<RegisterResponse> {
 
-      const existingUser = await this._authRepository.findByEmail(email);
+    const { name, email, password, role, organizationName } = data;
 
-      if (existingUser) throw new AppError(Messages.USER_ALREADY_EXISTS, 409);
+    const existingUser = await this._authRepository.findByEmail(email);
+    if (existingUser) throw new AppError(Messages.USER_ALREADY_EXISTS, 409);
 
-      const hashedPassword = await this._hashPassword(password);
+    const hashedPassword = await this._hashPassword(password);
 
-      await RedisService.setData(
-        `User:${email}`,
-        JSON.stringify({ name, email, hashedPassword, role, organizationName }),
-        3600
-      );
+    await RedisService.setData(
+      `User:${email}`,
+      JSON.stringify({ name, email, hashedPassword, role, organizationName }),
+      3600
+    );
 
-      let tempUser = await RedisService.getData(`User:${email}`);
-      try {
-        await EmailService.sentEmail(
-          email,
-          Messages.EMAIL_VERIFICATION_SUBJECT
-        );
-      } catch (error) {
-        throw new AppError(
-          Messages.EMAIL_VERIFICATION_FAILURE,
-          StatusCodes.INTERNAL_SERVER_ERROR
-        );
-      }
-       return { status:true, message: Messages.EMAIL_SENDING };
-  }
+    await RedisService.getData(`User:${email}`);
 
-  async loginUser(
-    email: string,
-    password: string,
-    role: "user" | "organizer" | "admin"
-  ) {
     try {
-      const user = await this._authRepository.findByEmail(email);
-      if (!user) throw new NotFoundError(Messages.USER_NOT_FOUND);
-
-      const isMatch = await this._comparePassword(password, user.password);
-      if (!isMatch) throw new unauthorizedError(Messages.PASSWORD_MISMATCH);
-
-      if (user.role !== role)
-        throw new unauthorizedError(Messages.ROLE_MISMATCH);
-      if (user.is_block === true) throw new unauthorizedError(Messages.BlOCKED);
-
-      const accessToken = signToken(user);
-      const refreshToken = refreshTokenCreation(user);
-
-      return {
-        status: true,
-        message: Messages.LOGIN_SUCCESSFULL,
-        data: {
-          email: user.email,
-          role: user.role,
-          is_block: user.is_block,
-          id: user._id,
-          avatarUrl: user.avatarUrl,
-          name: user.name,
-        },
-        tokens: { accessToken, refreshToken },
-      };
-    } catch (error: any) {
-      if (error instanceof AppError) {
-        throw error;
-      }
-      throw new AppError(
-        Messages.LOGIN_FAILURE,
-        StatusCodes.INTERNAL_SERVER_ERROR
-      );
-    }
-  }
-  async loginAdmin(
-    email: string,
-    password: string,
-    role: "user" | "organizer" | "admin"
-  ): Promise<any> {
-    try {
-      const user = await this._authRepository.findByEmail(email);
-      if (!user) throw new NotFoundError(Messages.USER_NOT_FOUND);
-
-      const isMatch = await this._comparePassword(password, user.password);
-      if (!isMatch) throw new unauthorizedError(Messages.PASSWORD_MISMATCH);
-
-      if (user.role !== role)
-        throw new unauthorizedError(Messages.ROLE_MISMATCH);
-
-      const accessToken = signToken(user);
-      const refreshToken = refreshTokenCreation(user);
-
-      return {
-        status: true,
-        message: Messages.LOGIN_SUCCESSFULL,
-        data: { email: user.email, role: user.role, is_block: user.is_block },
-        tokens: { accessToken, refreshToken },
-      };
-    } catch (error: any) {
-      if (error instanceof AppError) {
-        throw error;
-      }
-      throw new AppError(
-        Messages.LOGIN_FAILURE,
-        StatusCodes.INTERNAL_SERVER_ERROR
-      );
-    }
-  }
-
-  async logout(req: Request, res: Response): Promise<any> {
-    try {
+      await EmailService.sentEmail(email, Messages.EMAIL_VERIFICATION_SUBJECT);
     } catch (error) {
-      console.error("Logout error:", error);
-      throw new Error("Logout failed: Invalid or expired token");
+      throw new AppError(
+        Messages.EMAIL_VERIFICATION_FAILURE,
+        StatusCodes.INTERNAL_SERVER_ERROR
+      );
     }
+
+    return { status: true, message: Messages.EMAIL_SENDING };
   }
 
-  async refreshAccessToken(refreshToken: string): Promise<object | null> {
-    try {
+
+
+  async loginUser(data: LoginRequestDTOType): Promise<LoginResponse> {
+
+    const { email, role, password } = data;
+
+    const user = await this._authRepository.findByEmail(email);
+    if (!user) throw new NotFoundError(Messages.USER_NOT_FOUND);
+
+    const isMatch = await this._comparePassword(password, user.password);
+    if (!isMatch) throw new unauthorizedError(Messages.PASSWORD_MISMATCH);
+
+    if (user.role !== role) throw new unauthorizedError(Messages.ROLE_MISMATCH);
+    if (user.is_block === true) throw new unauthorizedError(Messages.BlOCKED);
+
+    const accessToken = signToken(user);
+    const refreshToken = refreshTokenCreation(user);
+
+    const response: LoginDataDTO = {
+      id: user._id.toString(),
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      avatarUrl: user.avatarUrl ?? undefined,
+      is_block: user.is_block,
+    };
+
+    return {
+      status: true,
+      message: Messages.LOGIN_SUCCESSFULL,
+      data: response,
+      tokens: {
+        accessToken: accessToken as string,
+        refreshToken: refreshToken as string,
+      },
+    };
+  }
+
+
+
+  async loginAdmin(data: LoginRequestDTOType): Promise<LoginResponse> {
+    const { email, role, password } = data;
+
+    const user = await this._authRepository.findByEmail(email);
+    if (!user) throw new NotFoundError(Messages.USER_NOT_FOUND);
+
+    const isMatch = await this._comparePassword(password, user.password);
+    if (!isMatch) throw new unauthorizedError(Messages.PASSWORD_MISMATCH);
+
+    if (user.role !== role) throw new unauthorizedError(Messages.ROLE_MISMATCH);
+
+    const accessToken = signToken(user);
+    const refreshToken = refreshTokenCreation(user);
+    const response:LoginDataDTO={
+      id:user._id.toString(),
+      email:user.email,
+      name:user.name,
+      role:user.role,
+      avatarUrl:user.avatarUrl ?? undefined,
+      is_block:user.is_block,
+    }
+
+    return {
+      status: true,
+      message: Messages.LOGIN_SUCCESSFULL,
+      data: response,
+      tokens: { accessToken:accessToken as string, refreshToken:refreshToken as string },
+    };
+  }
+
+ 
+  async refreshAccessToken(refreshToken: string): Promise<refreshAccessTokenResponse | null> {
+   
       const data = verifyToken(refreshToken, config.jwtSecret) as Decoded;
 
-      if (!data) {
-        return null;
-        throw new Error("refresh token is not in redis data");
-      }
+      if (!data) return null;
 
       const newAccessToken = signToken(data) as string;
       const newRefreshToken = refreshTokenCreation(data) as string;
 
       return { newAccessToken, newRefreshToken };
-    } catch (error) {
-      console.error("Refresh token error:", error);
-      return null;
-    }
+    
   }
 
   async verifyAccount(token: string): Promise<{ message: string }> {
-    try {
-      const decoded = verifyToken(token, config.EMAIL_SECRET as string) as {
-        to: string;
-      };
+    
+      const decoded = verifyToken(token, config.EMAIL_SECRET as string) as {to:string};
 
-      if (!decoded) {
-        throw new Error(Messages.TOKEN_FAILURE);
-      }
+      if (!decoded)  throw new unauthorizedError(Messages.TOKEN_FAILURE);
+
       const email = decoded.to;
 
       const userData = (await RedisService.getData(`User:${email}`)) as {
@@ -212,24 +191,23 @@ class AuthService implements IAuthService {
         return { message: Messages.ALREADY_VARIFIED_SUCCESS };
       }
 
-      if (!userData) throw new Error(Messages.TOKEN_FAILURE);
+      if (!userData) throw new unauthorizedError(Messages.TOKEN_FAILURE);
 
       try {
-        const user: Partial<IUser> = await this._authRepository.create({
+        const user: IUserDocument = await this._authRepository.create({
           name: userData.name,
           email: userData.email,
           password: userData.hashedPassword,
           role: userData.role,
           organizationName: userData.organizationName,
         });
-        console.log("user", user);
 
         if (user) {
           try {
             await new UserCreateProducer(
               kafkaWrapper.producer as Producer
             ).produce({
-              _id: user._id as string,
+              _id: user._id.toString(),
               name: user.name as string,
               email: user.email as string,
               avatarUrl: user.avatarUrl as string,
@@ -238,20 +216,18 @@ class AuthService implements IAuthService {
               role: user.role as "user" | "admin" | "organizer",
             });
           } catch (error) {
-            console.log("error from kafka service in service", error);
+            const err = error as Error
+            throw new AppError(err.message,400)
           }
         }
       } catch (error) {
+        console.log(error)
         await RedisService.deleteData(`User:${userData.email}`);
         return { message: Messages.ALREADY_VARIFIED_SUCCESS };
       }
 
       await RedisService.deleteData(`User:${userData.email}`);
       return { message: Messages.VARIFIED_SUCCESS };
-    } catch (error: any) {
-      console.error("Error in verifyEmail:", error);
-      throw new Error("Email verification failed");
-    }
   }
 
   async forgotPassword(body: {
@@ -312,16 +288,22 @@ class AuthService implements IAuthService {
   ): Promise<boolean> {
     return await bcrypt.compare(password, hashedPassword);
   }
-  async googleAuth(data: {
-    userID: string;
-    role: "organizer" | "user" | "admin";
-  }): Promise<any> {
+
+
+  async googleAuth(data: GoogleAuthRequestDTOType): Promise<any> {
     try {
       const { name, email } = await firebaseApp
         .auth()
         .verifyIdToken(data.userID);
+      if (!email || !name) {
+        throw new AppError(
+          Messages.INVALID_GOOGLE_TOKEN,
+          StatusCodes.BAD_REQUEST
+        );
+      }
 
       let userExists = await this._authRepository.findByEmail(email as string);
+
       if (!userExists) {
         userExists = await this._authRepository.create({
           email,
@@ -414,7 +396,6 @@ class AuthService implements IAuthService {
         ContentType: fileType as string,
       };
     } catch (error: any) {
-      console.error("Error generating pre-signed URL:", error);
       return error.message;
     }
   }
@@ -424,7 +405,6 @@ class AuthService implements IAuthService {
     id: string
   ): Promise<{ status: boolean; message: string }> {
     try {
-      // const user=await this.authRepository.updateById(id,{avatarUrl:params})
       return { status: true, message: Messages.IMAGE_URL_SUCCESS };
     } catch (error: any) {
       return { status: false, message: error.message };
@@ -443,7 +423,6 @@ class AuthService implements IAuthService {
         Bucket: config.BUCKET_NAME!,
         Key: key,
       };
-      // await s3Client.send(new DeleteObjectCommand(params))
 
       return { status: true, message: Messages.IMAGE_URL_SUCCESS };
     } catch (error: any) {

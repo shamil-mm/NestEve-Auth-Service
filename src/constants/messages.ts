@@ -43,6 +43,12 @@ export const Messages = {
     IMAGE_URL_FAILURE:"ImageUrl  failed to store",
     IMAGE_STORE_SUCCESS:"Image successfully stored",
     IMAGE_DELETE_SUCESS:"Profile-image successfully deleted",
-    INTERNAL_ERROR:'Internal Server Error'
+    INTERNAL_ERROR:'Internal Server Error',
+    INVALID_GOOGLE_TOKEN:'Invalid Google token payload',
+    LOGOUT_SUCCESS:'User Logout Success',
+    FILE_MISSING:'Missing fileName or fileType',
+    FILE_UPLOAD_FAILED:'File upload uploaded',
+    LOCATION_UPLOADED:'Location uploaded successfully'
+
   };
   

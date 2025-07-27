@@ -1,37 +1,27 @@
 import { Request, Response } from "express";
 import { IUser } from "../../model/interfaces/userInterface";
 import { RegisterUserType } from "../../dto/RequestDTO/registerUser.dto";
+import { LoginRequestDTOType } from "../../dto/RequestDTO/loginRequest.dto";
+import { GoogleAuthRequestDTOType } from "../../dto/RequestDTO/googleAuthRequest.dto";
+import { LoginResponse } from "../../dto/ResponseDTO/loginResponse.dto";
+import { RegisterResponse } from "../../dto/ResponseDTO/registerUserResponse.dto";
+import { refreshAccessTokenResponse } from "../../dto/ResponseDTO/refreshAccessTokenResponse.dto";
 
-export interface IapiResponse {
-  status: boolean;
-  message: string;
-  data?: any;
-}
+
 
 export interface IAuthService {
-  registerUser(data:RegisterUserType): Promise<IapiResponse>;
-  loginUser(
-    email: string,
-    password: string,
-    role: "organizer" | "user" | "admin"
-  ): Promise<any>;
-  loginAdmin(
-    email: string,
-    password: string,
-    role: "organizer" | "user" | "admin"
-  ): Promise<any>;
-  logout(req: Request, res?: Response): Promise<void>;
-  refreshAccessToken(refreshToken: string): Promise<any>;
+  registerUser(data: RegisterUserType): Promise<RegisterResponse>;
+  loginUser(data: LoginRequestDTOType): Promise<LoginResponse>;
+  loginAdmin(data: LoginRequestDTOType): Promise<LoginResponse>;
+  refreshAccessToken(refreshToken: string): Promise<refreshAccessTokenResponse|null>;
+  
   verifyAccount(token: string): Promise<{ message: string }>;
   forgotPassword(body: {
     email: string;
     password: string;
   }): Promise<{ message: string }>;
   verifyForgotPassword(token: string): Promise<{ message: string }>;
-  googleAuth(data: {
-    userID: string;
-    role: "organizer" | "user" | "admin";
-  }): Promise<any>;
+  googleAuth(data: GoogleAuthRequestDTOType): Promise<any>;
 
   currectUser(id: string): Promise<{ message: string; user: Partial<IUser> }>;
   updateName(
@@ -69,8 +59,8 @@ export interface IAuthService {
     userId: string
   ): Promise<{ message: string }>;
   getUserLocation(
-    userId:string
-  ):Promise<{lat?:number,lng?:number,message:string}>
+    userId: string
+  ): Promise<{ lat?: number; lng?: number; message: string }>;
 }
 
 export interface Decoded {
