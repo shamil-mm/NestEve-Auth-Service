@@ -1,13 +1,17 @@
 import { Kafka,Producer,Consumer,Partitioners } from "kafkajs";
+import dotevn from 'dotenv'
+dotevn.config
+
 
 class KafkaWrapper {
     private _kafka:Kafka
     private _producer?:Producer
     private _consumer?:Consumer
     constructor(){
+        const brokers= (process.env.KAFKA_BROKER || "localhost:9092").split(",")
         this._kafka=new Kafka({
             clientId:'auth-service',
-            brokers:["localhost:9092"]
+            brokers
         })
     }
     async connect():Promise<void>{
