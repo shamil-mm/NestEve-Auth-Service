@@ -18,14 +18,4 @@ spec:
           imagePullPolicy: always
           ports:
             - containerPort: 3000
-          envFrom:
-            - secretRef:
-               name: auth-secret
-          volumeMounts:
-            - name: firebase-key-volume
-              mountPath: /secrets/firebase
-              readOnly: true
-      volumes:
-        - name: firebase-key-volume
-          secret:
-            secretName: firebase-key-secret
+          

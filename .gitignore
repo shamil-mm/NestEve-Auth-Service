@@ -3,5 +3,5 @@ dist/
 .env
 *.logs
 .dockerignore
-k8s\development\auth-secret.yaml
-k8s\development\firebase-key-secret.yaml
+k8s/development/firebase-key-secret.yaml
+k8s/development/auth-secret.yaml
