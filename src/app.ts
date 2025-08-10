@@ -9,6 +9,7 @@ import { errorHandlerMiddleware } from "./middlewares/errorHandler";
 import AdminRoutes from "./routes/implementations/adminRoutes";
 import kafkaWrapper from "./services/Kafka/kafkaWrapper";
 import HealthCheck from "./routes/implementations/healthCheck";
+import config from "./config/config";
 const app = express();
 
 app.set("trust proxy", true);
@@ -22,7 +23,7 @@ app.use((req, res, next) => {
 
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL,
+    origin: config.FRONTEND_URL,
     credentials: true,
   })
 );
