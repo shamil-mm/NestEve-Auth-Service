@@ -23,7 +23,7 @@ app.use((req, res, next) => {
 
 app.use(
   cors({
-    origin: config.FRONTEND_URL,
+    origin: config.FRONTEND_URL?.split(','),
     credentials: true,
   })
 );
