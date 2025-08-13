@@ -22,10 +22,11 @@ app.use((req, res, next) => {
 });
 
 const allowedOrigins = config.FRONTEND_URL?.split(',');
-console.log("allowed origins in auth-service ",allowedOrigins)
+
 app.use(
   cors({
     origin: function(origin,callback){
+      console.log("allowed origins in auth-service ",origin)
       if(!origin)return callback(null,true)
       if(allowedOrigins?.indexOf(origin)!== -1){
         callback(null,origin)
