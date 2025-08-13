@@ -20,6 +20,7 @@ app.use((req, res, next) => {
   console.log("request recieved in auth service", req.path);
   next();
 });
+console.log('frontendurl : ',config.FRONTEND_URL?.split(','))
 
 app.use(
   cors({
