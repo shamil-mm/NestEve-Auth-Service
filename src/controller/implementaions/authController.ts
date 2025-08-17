@@ -412,6 +412,16 @@ class AuthController implements IAuthController {
       this._handleError(error, next);
     }
   }
+  async checkUserBlock(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { userId } = req.params;
+      validateObjectId(userId)
+      const response = await this._authService.checkUserBlock(userId);
+      res.status(StatusCodes.OK).json(response);
+    } catch (error) {
+      this._handleError(error, next);
+    }
+  }
 }
 
 export default AuthController;

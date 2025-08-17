@@ -532,6 +532,17 @@ class AuthService implements IAuthService {
       return { message: error.message };
     }
   }
+  async checkUserBlock(userId: string): Promise<{is_block:boolean} | undefined> {
+    try {
+      const res = await this._authRepository.findById(userId)
+      return {
+        is_block:res?.is_block as boolean
+      };
+    } catch (error: any) {
+      console.log(error);
+      throw new AppError(error,StatusCodes.NOT_FOUND)
+    }
+  }
 }
 
 export default AuthService;
