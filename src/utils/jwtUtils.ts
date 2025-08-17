@@ -5,7 +5,7 @@ import { Decoded } from "../services/interfaces/IAuthService";
 export const signToken = (user: any) => {
   try {
     return jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      { id: user.id, email: user.email, role: user.role,is_block:user.is_block },
       config.jwtSecret,
       { expiresIn: "15m" }
     );
@@ -25,7 +25,7 @@ export const verifyToken = (token: string, secret: string) => {
 export const refreshTokenCreation = (user: any) => {
   try {
     return jwt.sign(
-      { id: user._id, email: user.email, role: user.role },
+      { id: user._id, email: user.email, role: user.role,is_block:user.is_block },
       config.jwtSecret,
       { expiresIn: "7d" }
     );

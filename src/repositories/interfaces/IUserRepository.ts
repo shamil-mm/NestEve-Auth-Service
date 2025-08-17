@@ -1,5 +1,5 @@
 import { IUser, IUserDocument } from "../../model/interfaces/userInterface";
-export interface IUserRepository {
+export interface IUserRepository  {
   create(user: Partial<IUser>): Promise<IUserDocument>;
   findByEmail(email: string): Promise<IUserDocument | null>;
   update(email: string, item: Partial<IUser>): Promise<IUser | null>;

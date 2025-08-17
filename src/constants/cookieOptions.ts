@@ -1,7 +1,8 @@
 import config from "../config/config";
+import { CookieOptions } from "express";
 
 const isProduction = config.NODE_ENV === "production";
-export const ACCESS_TOKEN_COOKIE_OPTIONS = {
+export const ACCESS_TOKEN_COOKIE_OPTIONS:CookieOptions = {
   httpOnly: true,
   secure: isProduction,
   sameSite: isProduction ? "none" : "lax" as const,
@@ -9,7 +10,7 @@ export const ACCESS_TOKEN_COOKIE_OPTIONS = {
   path:'/'
 }
 
-export const REFRESH_TOKEN_COOKIE_OPTIONS = {
+export const REFRESH_TOKEN_COOKIE_OPTIONS :CookieOptions= {
   httpOnly: true,
   secure: isProduction,
   sameSite: isProduction ? "none" : "lax" as const,
@@ -17,7 +18,7 @@ export const REFRESH_TOKEN_COOKIE_OPTIONS = {
   path:'/'
 }
 
-export const CLEAR_TOKEN_COOKIE_OPTIONS={
+export const CLEAR_TOKEN_COOKIE_OPTIONS:CookieOptions={
   httpOnly: true,
   secure: isProduction,
   sameSite: isProduction ? "none" : "lax" as const,

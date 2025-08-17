@@ -13,7 +13,7 @@ class RedisService implements IRedisService {
         ? await redisClient.setex(key, expirationInSeconds, data)
         : await redisClient.set(key, data);
     } catch (error: any) {
-      console.error("❌ Redis SET Error:", error.message);
+      console.error(" Redis SET Error:", error.message);
     }
   }
   async getData<T>(key: string): Promise<T | null> {
@@ -21,7 +21,7 @@ class RedisService implements IRedisService {
       const data = await redisClient.get(key);
       return data ? (JSON.parse(data) as T) : null;
     } catch (error) {
-      console.error("❌ Redis GET Error:", error);
+      console.error(" Redis GET Error:", error);
       return null;
     }
   }
@@ -29,10 +29,10 @@ class RedisService implements IRedisService {
     try {
       const result = await redisClient.del(key);
       console.log(
-        result > 0 ? `✅ Deleted: ${key}` : `⚠️ Key not found: ${key}`
+        result > 0 ? ` Deleted: ${key}` : ` Key not found: ${key}`
       );
     } catch (error) {
-      console.error("❌ Redis DELETE Error:", error);
+      console.error(" Redis DELETE Error:", error);
     }
   }
 }

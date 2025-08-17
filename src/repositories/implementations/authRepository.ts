@@ -3,7 +3,7 @@ import User from "../../model/implementaions/User";
 import { IUser, IUserDocument } from "../../model/interfaces/userInterface";
 import { IUserRepository } from "../interfaces/IUserRepository";
 
-class AuthRepository implements IUserRepository {
+class AuthRepository  implements IUserRepository {
   async create(user: Partial<IUser>): Promise<IUserDocument> {
     try {
       const newUser = new User(user);

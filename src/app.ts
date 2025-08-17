@@ -21,23 +21,12 @@ app.use((req, res, next) => {
   next();
 });
 
-const allowedOrigins = config.FRONTEND_URL?.split(',');
-
 app.use(
   cors({
-    origin: function(origin,callback){
-      console.log("allowed origins in auth-service ",origin)
-      if(!origin)return callback(null,true)
-      if(allowedOrigins?.indexOf(origin)!== -1){
-        callback(null,origin)
-      }else{
-        callback(new Error('Not allowed by CORS auth -service'))
-      }
-    },
+    origin: config.FRONTEND_URL,
     credentials: true,
   })
 );
-
 
 app.use(cookieParser());
 app.use(express.json({ limit: "50mb" }));
