@@ -61,7 +61,7 @@ export interface IAuthService {
   getUserLocation(
     userId: string
   ): Promise<{ lat?: number; lng?: number; message: string }>;
-  checkUserBlock(userId:string):Promise<{is_block:boolean}|undefined>
+  checkUserBlock(email:string):Promise<{is_block:boolean}|undefined>
 }
 
 export interface Decoded {
