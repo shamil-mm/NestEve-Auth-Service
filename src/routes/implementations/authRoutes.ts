@@ -106,7 +106,7 @@ class AuthRoutes implements IAuthRoutes {
       this._authController.getUserLocation.bind(this._authController)
     );
     this.router.get(
-      `${this.path}/checkBlock`,
+      `${this.path}/checkBlock/:email`,
       this._authController.checkUserBlock.bind(this._authController)
     );
   }

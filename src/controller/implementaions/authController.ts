@@ -415,7 +415,8 @@ class AuthController implements IAuthController {
   async checkUserBlock(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { email } = req.params;
-      console.log(email)
+      console.log('params',req.params.email)
+      console.log('query',req.query.params)
       const response = await this._authService.checkUserBlock(email);
       console.log('check user block response',response)
       res.status(StatusCodes.OK).json(response);
